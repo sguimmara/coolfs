@@ -1,13 +1,12 @@
 CC = gcc
-OPTS = -Wall -std=c18
+OPTS = -Wall -g -std=c18 -D_POSIX_SOURCE
 RM = rm -f
+BIN = coolfs
 
 default: build
 
-build: main.o
-
-main.o: main.c
-	$(CC) $(OPTS) main.c `pkg-config fuse --cflags --libs` -o coolfs
+build:
+	$(CC) $(OPTS) main.c `pkg-config fuse --cflags --libs` -o $(BIN).out
 
 clean:
 	$(RM) main.o

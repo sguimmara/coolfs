@@ -1,7 +1,9 @@
+MAKE = make
+
 default: build
 
 build:
-	make -C src build
+	$(MAKE) -C src build
 
 clean:
-	make -C src clean
+	$(MAKE) -C src clean
