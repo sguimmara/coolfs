@@ -1,7 +1,6 @@
 #ifndef _COOL_INODE_H_
 #define _COOL_INODE_H_
 
-#include <fuse.h>
 #include <stddef.h>
 
 #include "storage.h"

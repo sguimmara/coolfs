@@ -63,6 +63,8 @@ cool_inode *cool_find_inode(const char *path) {
     return NULL;
 }
 
+int init(FILE *file) { return 0; }
+
 int cool_read(const char *path, char *buf, size_t size, off_t offset,
               struct fuse_file_info *fi) {
     log_debug("[read] %s (bufsize: %zo)", path, size);

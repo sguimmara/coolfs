@@ -2,9 +2,12 @@
 #define _COOLFS_H_
 
 #include <fuse.h>
+#include <stdio.h>
 #include <sys/stat.h>
 
 #include "inode.h"
+
+int init(FILE *file);
 
 int cool_read(const char *path, char *buf, size_t size, off_t offset,
               struct fuse_file_info *fi);
