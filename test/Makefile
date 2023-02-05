@@ -1,26 +1,26 @@
 TESTS = storage.test inode.test
 LIBFUSE ?= $(shell pkg-config --cflags --libs fuse)
 LIBS = $(LIBFUSE) libcoolfs.so
+CC = gcc
+OPTS = -Wall -g
+
+OBJS = ../src/inode.o ../src/storage.o ../src/log.o
 
 default: run
 
 test.o: test.c
-	gcc -c -g $< -o $@
-
-.PHONY: lib
-lib:
-	@make -C ../src libcoolfs.so
-	@cp ../src/libcoolfs.so .
+	$(CC) $(OPTS) -c -g $< -o $@
 
 .PHONY: inode.test
 inode.test: test.o inode.test.c
-	@make lib
-	gcc -g $^ -o $@ $(LIBS)
+	make -C ../src minimal
+	$(CC) $(OPTS) $^ $(OBJS) -o $@
 
 .PHONY: storage.test
 storage.test: test.o storage.test.c
-	@make lib
-	gcc -g $^ -o $@ $(LIBS)
+	make -C ../src minimal
+	$(CC) $(OPTS) $^ $(OBJS) -o $@
 
+.PHONY: run
 run: $(TESTS)
 	@for t in $(TESTS); do export LD_LIBRARY_PATH=`pwd`; ./$$t; done;

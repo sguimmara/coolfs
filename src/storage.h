@@ -20,12 +20,12 @@ typedef struct block {
 } block;
 
 /** A serialized inode */
-typedef struct ser_inode {
+typedef struct disk_inode {
     struct stat st;
     char *name;
     size_t name_len;
     ino_t parent;
-} ser_inode;
+} disk_inode;
 
 /**
  * @brief Initializes a new filesystem into the provided file.

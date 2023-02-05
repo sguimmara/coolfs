@@ -20,7 +20,7 @@ int mkfs(FILE *file) {
     const u_int16_t bs = BLOCK_SIZE;
     fwrite(&bs, sizeof(u_int16_t), 1, file);
 
-    size_t inode_area_size = sizeof(ser_inode) * MAX_INODES;
+    size_t inode_area_size = sizeof(disk_inode) * MAX_INODES;
     char *inode_area = malloc(inode_area_size);
 
     fwrite(inode_area, inode_area_size, 1, file);

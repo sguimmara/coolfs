@@ -13,20 +13,22 @@ OBJS=fs.o storage.o inode.o log.o
 
 default: $(NAME).out
 
+log.o: log/log.c
+	$(CC) $(OPTS) -c $< -o $@
+
 storage.o: storage.c storage.h
-	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
+	$(CC) $(OPTS) -c $< -o $@
 
 inode.o: inode.c inode.h
-	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
+	$(CC) $(OPTS) -c $< -o $@
 
 main.o: main.c inode.h fs.h storage.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
-log.o: log/log.c
-	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
-
 fs.o: fs.c fs.h inode.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
+
+minimal: inode.o storage.o log.o
 
 lib$(NAME).so: $(OBJS)
 	$(CC) $(OPTS) -shared $^ -o $@ $(LIBS)

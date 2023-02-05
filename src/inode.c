@@ -119,6 +119,16 @@ int add_child(cool_inode *parent, cool_inode *child) {
     return 0;
 }
 
+disk_inode *serialize_inode(const cool_inode *inode) {
+    disk_inode *res = malloc(sizeof(disk_inode));
+
+    res->name = inode->name;
+    res->name_len = strlen(inode->name) + 1;
+    res->st = *inode->st;
+
+    return res;
+}
+
 void print_tree(cool_inode *inode, int level) {
     char *indent = malloc(level + 1);
     for (size_t i = 0; i < level; i++) {

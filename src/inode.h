@@ -38,4 +38,6 @@ void print_tree(cool_inode *inode, int level);
 
 int add_child(cool_inode *parent, cool_inode *child);
 
+disk_inode *serialize_inode(const cool_inode *inode);
+
 #endif /* _COOL_INODE_H_ */
