@@ -82,6 +82,10 @@ int main(int argc, char *argv[]) {
     log_set_level(0);
     log_info("starting coolfs...");
 
+    FILE *storage = fopen("cool.disk", "wb");
+    mkfs(storage);
+    fclose(storage);
+
     if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
         return 1;
 

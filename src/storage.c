@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "log/log.h"
 
@@ -10,6 +12,21 @@ static size_t block_count;
 static int should_sort;
 
 static blno_t current_block_no = 0;
+
+char MAGIC[6] = {'C', 'O', 'O', 'L', 'F', 'S'};
+
+int mkfs(FILE *file) {
+    fwrite(MAGIC, sizeof(char), 6, file);
+    const u_int16_t bs = BLOCK_SIZE;
+    fwrite(&bs, sizeof(u_int16_t), 1, file);
+
+    size_t inode_area_size = sizeof(ser_inode) * MAX_INODES;
+    char *inode_area = malloc(inode_area_size);
+
+    fwrite(inode_area, inode_area_size, 1, file);
+
+    return 0;
+}
 
 block *make_block(const char *data, const size_t size) {
     if (size > BLOCK_SIZE) {

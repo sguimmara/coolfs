@@ -14,10 +14,10 @@ typedef struct child_list {
 } child_list;
 
 typedef struct cool_inode {
-    struct stat *st;
     char *name;
-    blno_t *blocks;
+    struct stat *st;
     size_t block_count;
+    blno_t *blocks;
 
     struct child_list *children;
 } cool_inode;

@@ -5,6 +5,11 @@
 #define BLOCK_SIZE 1024
 #endif
 
+#include <stdio.h>
+#include <sys/stat.h>
+
+#define MAX_INODES 1024
+
 typedef size_t blno_t;
 
 /** A data block */
@@ -13,6 +18,22 @@ typedef struct block {
     size_t size;
     char *content;
 } block;
+
+/** A serialized inode */
+typedef struct ser_inode {
+    struct stat st;
+    char *name;
+    size_t name_len;
+    ino_t parent;
+} ser_inode;
+
+/**
+ * @brief Initializes a new filesystem into the provided file.
+ *
+ * @param file The persistent storage file.
+ * @return int The status.
+ */
+int mkfs(FILE *file);
 
 /**
  * @brief Creates a block with the specified data.
