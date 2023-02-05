@@ -1,36 +1,43 @@
 CC = gcc
 LIBFUSE ?= $(shell pkg-config --cflags --libs fuse)
 LIBS = $(LIBFUSE)
-DEFINES = -D_POSIX_SOURCE -DLOG_USE_COLOR
+DEFINES = -D_POSIX_SOURCE=200809L -DLOG_USE_COLOR
 C_STD = -std=c18
-FLAGS = -Wall -g
+FLAGS = -Wall -g -fPIC
 OPTS = $(FLAGS) $(C_STD) $(DEFINES)
 RM = rm -f
-BIN = coolfs
+NAME = coolfs
 INSTALL_PREFIX = /usr/bin
 
-OBJS=main.o coolfs.o inode.o log/log.o
+OBJS=fs.o storage.o inode.o log.o
 
-default: $(BIN).out
+default: $(NAME).out
 
-coolfs.o: coolfs.c coolfs.h inode.h
+storage.o: storage.c storage.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
 inode.o: inode.c inode.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
-main.o: main.c inode.h coolfs.h
+main.o: main.c inode.h fs.h storage.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
-log/log.o: log/log.c
+log.o: log/log.c
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
-$(BIN).out: $(OBJS)
+fs.o: fs.c fs.h inode.h
+	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
+
+lib$(NAME).so: $(OBJS)
+	$(CC) $(OPTS) -shared $^ -o $@ $(LIBS)
+
+$(NAME).out: main.o $(OBJS)
 	$(CC) $(OPTS) $^ -o $@ $(LIBS)
 
 clean:
 	$(RM) *.o
 	$(RM) *.out
+	$(RM) *.so
 
 install: build
-	cp $(BIN).out $(INSTALL_PREFIX)/$(BIN)
+	cp $(NAME).out $(INSTALL_PREFIX)/$(NAME)
