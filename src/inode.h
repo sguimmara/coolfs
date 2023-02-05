@@ -2,6 +2,7 @@
 #define _COOL_INODE_H_
 
 #include <stddef.h>
+#include <fuse.h>
 
 struct cool_inode;
 
@@ -23,7 +24,7 @@ cool_inode *mk_root();
 
 cool_inode *mk_inode(ino_t n, char *name, char *data);
 
-child_list *mk_default_list();
+child_list *mk_empty_list();
 
 cool_inode *get_child(cool_inode *parent, const char *name);
 

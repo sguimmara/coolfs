@@ -1,3 +1,0 @@
-[submodule "libs/log"]
-	path = libs/log
-	url = git@github.com:rxi/log.c.git
