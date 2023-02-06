@@ -13,6 +13,7 @@
 #include "fs.h"
 #include "inode.h"
 #include "storage.h"
+#include "dir.h"
 
 #include "log/log.h"
 
@@ -40,24 +41,38 @@ void *cool_init(struct fuse_conn_info *conn) {
 
     log_info("initializing coolfs...");
 
-    cool_inode *root = mk_root();
+    // cool_inode *root = mk_root();
 
-    add_child(
-        root,
-        mk_inode(
-            2, "lorem",
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
-            "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut "
-            "enim ad minim veniam, quis nostrud exercitation ullamco laboris "
-            "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in "
-            "reprehenderit in voluptate velit esse cillum dolore eu fugiat "
-            "nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
-            "sunt in culpa qui officia deserunt mollit anim id est laborum."));
-    add_child(root, mk_inode(3, "bar", "I am bar"));
-    add_child(root, mk_inode(4, "baz", "I am baz"));
-    add_child(root, mk_dir(5, "subdir"));
+    cool_dir *fs_root = cool_mkdir();
+    
+    dir_add_dir(fs_root, "boot", cool_mkdir());
+    dir_add_dir(fs_root, "root", cool_mkdir());
+    dir_add_dir(fs_root, "bin", cool_mkdir());
+    cool_dirent *etc = dir_add_dir(fs_root, "etc", cool_mkdir());
+    cool_dirent *home = dir_add_dir(fs_root, "home", cool_mkdir());
+    cool_dirent *jay = dir_add_dir(home->node.dir, "jay", cool_mkdir());
+    dir_add_dir(jay->node.dir, ".config", cool_mkdir());
+    dir_add_inode(jay->node.dir, ".bashrc", mk_inode(2323));
+    dir_add_dir(fs_root, "var", cool_mkdir());
 
-    print_tree(root, 0);
+    print_root(fs_root);
+
+    // add_child(
+    //     root,
+    //     mk_inode(
+    //         2, "lorem",
+    //         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
+    //         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut "
+    //         "enim ad minim veniam, quis nostrud exercitation ullamco laboris "
+    //         "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in "
+    //         "reprehenderit in voluptate velit esse cillum dolore eu fugiat "
+    //         "nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
+    //         "sunt in culpa qui officia deserunt mollit anim id est laborum."));
+    // add_child(root, mk_inode(3, "bar", "I am bar"));
+    // add_child(root, mk_inode(4, "baz", "I am baz"));
+    // add_child(root, mk_dir(5, "subdir"));
+
+    // print_tree(root, 0);
 
     log_info("initialized.");
 

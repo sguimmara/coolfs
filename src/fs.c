@@ -15,54 +15,42 @@
 
 #include "log/log.h"
 
-static cool_inode *root;
-
-static char *PATH_SEP = "/";
-
-cool_inode *mk_root() {
-    log_trace("mk_root: making root node");
-
-    cool_inode *res = mk_dir(1, "/");
-
-    root = res;
-
-    return res;
-}
+// static char *PATH_SEP = "/";
 
 cool_inode *cool_find_inode(const char *path) {
-    assert(root != NULL);
-    assert(path != NULL);
+    // assert(root != NULL);
+    // assert(path != NULL);
 
-    log_debug("cool_find_inode: %s", path);
+    // log_debug("cool_find_inode: %s", path);
 
-    if (strcmp(path, PATH_SEP) == 0) {
-        log_trace("cool_find_inode: returning root node");
-        return root;
-    }
+    // if (strcmp(path, PATH_SEP) == 0) {
+    //     log_trace("cool_find_inode: returning root node");
+    //     return root;
+    // }
 
-    cool_inode *cur = root;
-    char *cpy = malloc(strlen(path) + 1);
-    strcpy(cpy, path);
+    // cool_inode *cur = root;
+    // char *cpy = malloc(strlen(path) + 1);
+    // strcpy(cpy, path);
 
-    char *fragment = strtok(cpy, PATH_SEP);
+    // char *fragment = strtok(cpy, PATH_SEP);
 
-    while (fragment) {
-        cur = get_child(cur, fragment);
-        if (cur == NULL) {
-            free(cpy);
-            return NULL;
-        }
+    // while (fragment) {
+    //     cur = get_child(cur, fragment);
+    //     if (cur == NULL) {
+    //         free(cpy);
+    //         return NULL;
+    //     }
 
-        return cur;
-        fragment = strtok(NULL, PATH_SEP);
-        if (fragment == NULL) {
-            free(cpy);
-            log_debug("cool_find_inode: %s -> inode %s", path, cur->name);
-            return cur;
-        }
-    }
+    //     return cur;
+    //     fragment = strtok(NULL, PATH_SEP);
+    //     if (fragment == NULL) {
+    //         free(cpy);
+    //         log_debug("cool_find_inode: %s -> inode %s", path, cur->name);
+    //         return cur;
+    //     }
+    // }
 
-    free(cpy);
+    // free(cpy);
     return NULL;
 }
 
@@ -121,16 +109,16 @@ int cool_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         return -ENOENT;
     }
 
-    log_trace("[readdir] %s (%lo children)", inode->name,
-              inode->children->count);
+    // log_trace("[readdir] %s (%lo children)", inode->name,
+    //           inode->children->count);
 
-    filler(buf, ".", NULL, 0);
-    filler(buf, "..", NULL, 0);
+    // filler(buf, ".", NULL, 0);
+    // filler(buf, "..", NULL, 0);
 
-    for (size_t i = 0; i < inode->children->count; i++) {
-        cool_inode *child = inode->children->elems[i];
-        filler(buf, child->name, child->st, 0);
-    }
+    // for (size_t i = 0; i < inode->children->count; i++) {
+    //     cool_inode *child = inode->children->elems[i];
+    //     filler(buf, child->name, child->st, 0);
+    // }
 
     return 0;
 }

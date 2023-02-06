@@ -2,23 +2,16 @@
 #define _COOL_INODE_H_
 
 #include <stddef.h>
+#include <sys/types.h>
 
 #include "storage.h"
 
 struct cool_inode;
 
-typedef struct child_list {
-    struct cool_inode **elems;
-    size_t count;
-} child_list;
-
 typedef struct cool_inode {
-    char *name;
     struct stat *st;
     size_t block_count;
     blk_no *blocks;
-
-    struct child_list *children;
 } cool_inode;
 
 /** Creates the root node (/) */
@@ -26,9 +19,7 @@ cool_inode *mk_root();
 
 void free_inode(cool_inode* inode);
 
-cool_inode *mk_inode(ino_t n, char *name, char *data);
-
-child_list *mk_empty_list();
+cool_inode *mk_inode(ino_t n);
 
 cool_inode *mk_dir(const ino_t n, const char *name);
 
