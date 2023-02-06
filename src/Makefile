@@ -9,7 +9,7 @@ RM = rm -f
 NAME = coolfs
 INSTALL_PREFIX = /usr/bin
 
-OBJS=fs.o storage.o inode.o log.o
+OBJS=fs.o storage.o inode.o log.o bitmap.o
 
 default: $(NAME).out
 
@@ -20,6 +20,9 @@ storage.o: storage.c storage.h
 	$(CC) $(OPTS) -c $< -o $@
 
 inode.o: inode.c inode.h
+	$(CC) $(OPTS) -c $< -o $@
+
+bitmap.o: bitmap.c bitmap.h
 	$(CC) $(OPTS) -c $< -o $@
 
 main.o: main.c inode.h fs.h storage.h

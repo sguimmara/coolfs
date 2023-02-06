@@ -12,6 +12,7 @@
 
 #include "fs.h"
 #include "inode.h"
+#include "storage.h"
 
 #include "log/log.h"
 
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
 
     FILE *storage = fopen("cool.disk", "wb");
     mkfs(storage);
-    fclose(storage);
+    sto_init(storage);
 
     if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
         return 1;
@@ -99,6 +100,8 @@ int main(int argc, char *argv[]) {
 
     fuse_opt_free_args(&args);
 
+    sto_dispose();
+    fclose(storage);
     log_info("exiting");
 
     return ret;

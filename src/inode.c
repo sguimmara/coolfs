@@ -20,6 +20,13 @@ child_list *mk_empty_list() {
     return res;
 }
 
+void free_inode(cool_inode *inode) {
+    free(inode->name);
+    free(inode->st);
+    free(inode->blocks);
+    free(inode->children);
+}
+
 /** Creates an inode with the provided name and node number */
 cool_inode *mk_dir(const ino_t n, const char *name) {
     struct cool_inode *result = malloc(sizeof(cool_inode));
@@ -143,4 +150,6 @@ void print_tree(cool_inode *inode, int level) {
         cool_inode *child = inode->children->elems[i];
         print_tree(child, level + 1);
     }
+
+    free(indent);
 }

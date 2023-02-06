@@ -1,11 +1,11 @@
-TESTS = storage.test inode.test
+TESTS = storage.test inode.test  bitmap.test
 LIBFUSE ?= $(shell pkg-config --cflags --libs fuse)
 LIBS = $(LIBFUSE) libcoolfs.so
 CC = gcc
 OPTS = -Wall -g
 MAKE = make -q
 
-OBJS = ../src/inode.o ../src/storage.o ../src/log.o
+OBJS = ../src/inode.o ../src/bitmap.o ../src/storage.o ../src/log.o
 
 default: test
 
@@ -14,6 +14,11 @@ test.o: test.c
 
 .PHONY: inode.test
 inode.test: test.o inode.test.c
+	@$(MAKE) -C ../src minimal
+	$(CC) $(OPTS) $^ $(OBJS) -o $@
+
+.PHONY: bitmap.test
+bitmap.test: test.o bitmap.test.c
 	@$(MAKE) -C ../src minimal
 	$(CC) $(OPTS) $^ $(OBJS) -o $@
 

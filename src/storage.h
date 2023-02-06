@@ -1,20 +1,16 @@
 #ifndef _STORAGE_H_
 #define _STORAGE_H_
 
-#if !defined(BLOCK_SIZE)
-#define BLOCK_SIZE 1024
-#endif
-
 #include <stdio.h>
 #include <sys/stat.h>
 
-#define MAX_INODES 1024
+#include "constants.h"
 
-typedef size_t blno_t;
+typedef size_t blk_no;
 
 /** A data block */
 typedef struct block {
-    blno_t no;
+    blk_no no;
     size_t size;
     char *content;
 } block;
@@ -26,6 +22,9 @@ typedef struct disk_inode {
     size_t name_len;
     ino_t parent;
 } disk_inode;
+
+void sto_init(FILE *file);
+void sto_dispose();
 
 /**
  * @brief Initializes a new filesystem into the provided file.
@@ -50,7 +49,7 @@ block *make_block(const char *data, const size_t size);
  * @param no The block number.
  * @return block* The block if found, otherwise NULL.
  */
-block *get_block(blno_t no);
+block *get_block(blk_no no);
 
 /**
  * @brief Writes the block in the storage.
@@ -68,7 +67,7 @@ void block_write(block *blk);
  * @param block_count The number of blocks written.
  * @return blno_t* The array of block numbers.
  */
-blno_t *storage_write(const char *data, const size_t size, size_t *block_count);
+blk_no *storage_write(const char *data, const size_t size, size_t *block_count);
 
 /**
  * @brief Reads the specified blocks, then writes their content into the buffer.
@@ -79,6 +78,6 @@ blno_t *storage_write(const char *data, const size_t size, size_t *block_count);
  * @param blk_count The number of blocks to read.
  * @return int The status.
  */
-int storage_read(char *buf, size_t size, blno_t *blks, size_t blk_count);
+int storage_read(char *buf, size_t size, blk_no *blks, size_t blk_count);
 
 #endif /* _STORAGE_H_ */

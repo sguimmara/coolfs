@@ -49,17 +49,20 @@ cool_inode *cool_find_inode(const char *path) {
     while (fragment) {
         cur = get_child(cur, fragment);
         if (cur == NULL) {
+            free(cpy);
             return NULL;
         }
 
         return cur;
         fragment = strtok(NULL, PATH_SEP);
         if (fragment == NULL) {
+            free(cpy);
             log_debug("cool_find_inode: %s -> inode %s", path, cur->name);
             return cur;
         }
     }
 
+    free(cpy);
     return NULL;
 }
 

@@ -16,13 +16,15 @@ typedef struct cool_inode {
     char *name;
     struct stat *st;
     size_t block_count;
-    blno_t *blocks;
+    blk_no *blocks;
 
     struct child_list *children;
 } cool_inode;
 
 /** Creates the root node (/) */
 cool_inode *mk_root();
+
+void free_inode(cool_inode* inode);
 
 cool_inode *mk_inode(ino_t n, char *name, char *data);
 
