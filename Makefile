@@ -3,10 +3,12 @@ MAKE = make
 default: build
 
 build:
-	$(MAKE) -C src build
+	$(MAKE) -C src
 
-tests:
-	$(MAKE) -C test run
+.PHONY: test
+test:
+	$(MAKE) -C src
+	$(MAKE) -C test
 
 clean:
 	$(MAKE) -C src clean
