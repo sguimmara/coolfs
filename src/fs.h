@@ -6,17 +6,28 @@
 #include <sys/stat.h>
 
 #include "inode.h"
+#include "dir.h"
 
-int init(FILE *file);
+/**
+ * @brief Initializes a new filesystem into the provided file.
+ *
+ * @param filename The persistent storage file.
+ * @return int The status.
+ */
+int cl_mkfs(const char* filename);
 
-int cool_read(const char *path, char *buf, size_t size, off_t offset,
+void cl_fsinit(cool_dirent *root);
+
+int cl_open_dev(const char *filename);
+
+int cl_read(const char *path, char *buf, size_t size, off_t offset,
               struct fuse_file_info *fi);
 
-int cool_open(const char *path, struct fuse_file_info *fi);
+int cl_open(const char *path, struct fuse_file_info *fi);
 
-int cool_getattr(const char *path, struct stat *st);
+int cl_getattr(const char *path, struct stat *st);
 
-int cool_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                  off_t offset, struct fuse_file_info *fi);
 
 #endif /* _COOLFS_H_ */

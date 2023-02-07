@@ -14,23 +14,10 @@ typedef struct cool_inode {
     blk_no *blocks;
 } cool_inode;
 
-/** Creates the root node (/) */
-cool_inode *mk_root();
+void cl_free_inode(cool_inode* inode);
 
-void free_inode(cool_inode* inode);
+cool_inode *cl_new_inode_raw(ino_t n);
 
-cool_inode *mk_inode(ino_t n);
-
-cool_inode *mk_dir(const ino_t n, const char *name);
-
-cool_inode *get_child(cool_inode *parent, const char *name);
-
-int inode_read(char *buf, cool_inode *node, size_t size, off_t offset);
-
-void print_tree(cool_inode *inode, int level);
-
-int add_child(cool_inode *parent, cool_inode *child);
-
-disk_inode *serialize_inode(const cool_inode *inode);
+int cl_read_inode(char *buf, cool_inode *node, size_t size, off_t offset);
 
 #endif /* _COOL_INODE_H_ */

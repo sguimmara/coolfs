@@ -15,24 +15,8 @@ typedef struct block {
     char *content;
 } block;
 
-/** A serialized inode */
-typedef struct disk_inode {
-    struct stat st;
-    char *name;
-    size_t name_len;
-    ino_t parent;
-} disk_inode;
-
-void sto_init(FILE *file);
-void sto_dispose();
-
-/**
- * @brief Initializes a new filesystem into the provided file.
- *
- * @param file The persistent storage file.
- * @return int The status.
- */
-int mkfs(FILE *file);
+void cl_init_storage(FILE *file);
+void cl_storage_dispose();
 
 /**
  * @brief Creates a block with the specified data.
@@ -41,7 +25,7 @@ int mkfs(FILE *file);
  * @param size The data size.
  * @return block* The created block.
  */
-block *make_block(const char *data, const size_t size);
+block *cl_new_block(const char *data, const size_t size);
 
 /**
  * @brief Returns the block with the specified number.
@@ -49,14 +33,14 @@ block *make_block(const char *data, const size_t size);
  * @param no The block number.
  * @return block* The block if found, otherwise NULL.
  */
-block *get_block(blk_no no);
+block *cl_get_block(blk_no no);
 
 /**
  * @brief Writes the block in the storage.
  *
  * @param blk The block to write.
  */
-void block_write(block *blk);
+void cl_write_block(block *blk);
 
 /**
  * @brief Writes the buffer in the storage, and returns an array of block
@@ -67,7 +51,7 @@ void block_write(block *blk);
  * @param block_count The number of blocks written.
  * @return blno_t* The array of block numbers.
  */
-blk_no *storage_write(const char *data, const size_t size, size_t *block_count);
+blk_no *cl_write_storage(const char *data, const size_t size, size_t *block_count);
 
 /**
  * @brief Reads the specified blocks, then writes their content into the buffer.
@@ -78,6 +62,6 @@ blk_no *storage_write(const char *data, const size_t size, size_t *block_count);
  * @param blk_count The number of blocks to read.
  * @return int The status.
  */
-int storage_read(char *buf, size_t size, blk_no *blks, size_t blk_count);
+int cl_read_storage(char *buf, size_t size, blk_no *blks, size_t blk_count);
 
 #endif /* _STORAGE_H_ */

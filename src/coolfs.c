@@ -14,6 +14,7 @@
 #include "inode.h"
 #include "storage.h"
 #include "dir.h"
+#include "inode_alloc.h"
 
 #include "log/log.h"
 
@@ -43,23 +44,28 @@ void *cool_init(struct fuse_conn_info *conn) {
 
     // cool_inode *root = mk_root();
 
-    cool_dir *fs_root = cool_mkdir();
-    
-    dir_add_dir(fs_root, "boot", cool_mkdir());
-    dir_add_dir(fs_root, "root", cool_mkdir());
-    dir_add_dir(fs_root, "bin", cool_mkdir());
-    cool_dirent *etc = dir_add_dir(fs_root, "etc", cool_mkdir());
-    cool_dirent *home = dir_add_dir(fs_root, "home", cool_mkdir());
-    cool_dirent *jay = dir_add_dir(home->node.dir, "jay", cool_mkdir());
-    dir_add_dir(jay->node.dir, ".config", cool_mkdir());
-    dir_add_inode(jay->node.dir, ".bashrc", mk_inode(2323));
-    dir_add_dir(fs_root, "var", cool_mkdir());
+    cool_dirent *fs_root = cl_new_root();
+    cool_dir *root = fs_root->node.dir;
 
-    print_root(fs_root);
+    cl_init_inode_allocator(MAX_INODES);
+    
+    cl_add_dir(root, "boot", cl_new_dir());
+    cl_add_dir(root, "root", cl_new_dir());
+    cl_add_dir(root, "bin", cl_new_dir());
+    cool_dirent *etc = cl_add_dir(root, "etc", cl_new_dir());
+    cool_dirent *home = cl_add_dir(root, "home", cl_new_dir());
+    cool_dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
+    cl_add_dir(jay->node.dir, ".config", cl_new_dir());
+    cl_add_file(jay->node.dir, ".bashrc", cl_new_file(cl_new_inode()->st->st_ino));
+    cl_add_dir(root, "var", cl_new_dir());
+
+    cl_print_root(root);
+
+    cl_fsinit(fs_root);
 
     // add_child(
     //     root,
-    //     mk_inode(
+    //     cl_new_inode_raw(
     //         2, "lorem",
     //         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
     //         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut "
@@ -68,8 +74,8 @@ void *cool_init(struct fuse_conn_info *conn) {
     //         "reprehenderit in voluptate velit esse cillum dolore eu fugiat "
     //         "nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
     //         "sunt in culpa qui officia deserunt mollit anim id est laborum."));
-    // add_child(root, mk_inode(3, "bar", "I am bar"));
-    // add_child(root, mk_inode(4, "baz", "I am baz"));
+    // add_child(root, cl_new_inode_raw(3, "bar", "I am bar"));
+    // add_child(root, cl_new_inode_raw(4, "baz", "I am baz"));
     // add_child(root, mk_dir(5, "subdir"));
 
     // print_tree(root, 0);
@@ -82,12 +88,12 @@ void *cool_init(struct fuse_conn_info *conn) {
 static const struct fuse_operations operations = {
     .init = cool_init,
 
-    .getattr = cool_getattr,
+    .getattr = cl_getattr,
 
-    .readdir = cool_readdir,
+    .readdir = cl_readdir,
 
-    .open = cool_open,
-    .read = cool_read,
+    .open = cl_open,
+    .read = cl_read,
 };
 
 int main(int argc, char *argv[]) {
@@ -99,8 +105,8 @@ int main(int argc, char *argv[]) {
     log_info("starting coolfs...");
 
     FILE *storage = fopen("cool.disk", "wb");
-    mkfs(storage);
-    sto_init(storage);
+    // cl_mkfs(storage);
+    cl_init_storage(storage);
 
     if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
         return 1;
@@ -115,7 +121,7 @@ int main(int argc, char *argv[]) {
 
     fuse_opt_free_args(&args);
 
-    sto_dispose();
+    cl_storage_dispose();
     fclose(storage);
     log_info("exiting");
 

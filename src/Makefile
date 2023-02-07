@@ -9,9 +9,10 @@ RM = rm -f
 NAME = coolfs
 INSTALL_PREFIX = /usr/bin
 
-OBJS=fs.o storage.o inode.o log.o bitmap.o dir.o
+INCLUDES=fs.h storage.h inode.h bitmap.h dir.h inode_alloc.h
+OBJS=fs.o storage.o inode.o log.o bitmap.o dir.o inode_alloc.o
 
-default: $(NAME).out
+default: coolfs mkcoolfs coolfsck
 
 log.o: log/log.c
 	$(CC) $(OPTS) -c $< -o $@
@@ -22,13 +23,16 @@ storage.o: storage.c storage.h
 inode.o: inode.c inode.h
 	$(CC) $(OPTS) -c $< -o $@
 
+inode_alloc.o: inode_alloc.c inode_alloc.h
+	$(CC) $(OPTS) -c $< -o $@
+
 dir.o: dir.c dir.h
 	$(CC) $(OPTS) -c $< -o $@
 
 bitmap.o: bitmap.c bitmap.h
 	$(CC) $(OPTS) -c $< -o $@
 
-main.o: main.c inode.h fs.h storage.h
+coolfs.o: coolfs.c inode.h fs.h storage.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
 fs.o: fs.c fs.h inode.h
@@ -36,16 +40,24 @@ fs.o: fs.c fs.h inode.h
 
 minimal: inode.o storage.o log.o
 
-lib$(NAME).so: $(OBJS)
+lib$(NAME).so: $(OBJS) $(INCLUDES)
 	$(CC) $(OPTS) -shared $^ -o $@ $(LIBS)
 
-$(NAME).out: main.o $(OBJS)
+mkcoolfs: mkcoolfs.c $(OBJS)
+	$(CC) $(OPTS) $^ -o $@ $(LIBS)
+
+coolfsck: coolfsck.c $(OBJS)
+	$(CC) $(OPTS) $^ -o $@ $(LIBS)
+
+coolfs: coolfs.c $(OBJS)
 	$(CC) $(OPTS) $^ -o $@ $(LIBS)
 
 clean:
 	$(RM) *.o
 	$(RM) *.out
 	$(RM) *.so
+	$(RM) coolfs
+	$(RM) mkcoolfs
 
 install: build
 	cp $(NAME).out $(INSTALL_PREFIX)/$(NAME)

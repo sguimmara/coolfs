@@ -5,10 +5,9 @@
 
 #include "log/log.h"
 
-#include "storage.h"
 #include "bitmap.h"
-
-#define MAX_BLOCKS 1024
+#include "storage.h"
+#include "constants.h"
 
 static block **blocks;
 static size_t block_count;
@@ -18,40 +17,7 @@ FILE *disk;
 size_t total_storage;
 size_t used_storage;
 
-char MAGIC[6] = {'C', 'O', 'O', 'L', 'F', 'S'};
-
-int mkfs(FILE *file) {
-    log_trace("mkfs: writing magic number");
-    fwrite(MAGIC, sizeof(char), 6, file);
-    log_trace("mkfs: writing block size (%u)", BLOCK_SIZE);
-    const u_int16_t bs = BLOCK_SIZE;
-    fwrite(&bs, sizeof(u_int16_t), 1, file);
-
-    size_t inode_area_size = sizeof(disk_inode) * MAX_INODES;
-    log_trace("mkfs: allocating inode area (%u bytes)", inode_area_size);
-    char *inode_area = calloc(inode_area_size, 1);
-
-    size_t blk_bitmap_size = MAX_BLOCKS / 8;
-    log_trace("mkfs: allocating block bitmap (%u bytes)", blk_bitmap_size);
-    char *blk_bitmap_area = calloc(inode_area_size, 1);
-    fwrite(blk_bitmap_area, blk_bitmap_size, 1, file);
-
-    size_t blk_size = MAX_BLOCKS * BLOCK_SIZE;
-    log_trace("mkfs: allocating block area (%u bytes)", blk_size);
-    char *blk_area = calloc(inode_area_size, 1);
-    fwrite(blk_area, blk_size, 1, file);
-
-    log_trace("writing to disk");
-
-    free(inode_area);
-    free(blk_bitmap_area);
-    free(blk_area);
-
-    log_info("successfully created disk file");
-    return 0;
-}
-
-block *make_block(const char *data, const size_t size) {
+block *cl_new_block(const char *data, const size_t size) {
     if (size > BLOCK_SIZE) {
         return NULL;
     }
@@ -77,24 +43,24 @@ block *make_block(const char *data, const size_t size) {
     return blk;
 }
 
-void sto_dispose() {
+void cl_storage_dispose() {
     for (size_t i = 0; i < block_count; i++) {
         free(blocks[i]->content);
         free(blocks[i]);
     }
 }
 
-void sto_init(FILE* file) {
+void cl_init_storage(FILE *file) {
     disk = file;
     block_count = 0;
-    log_trace("sto_init: allocating %u blocks", MAX_BLOCKS);
+    log_trace("cl_init_storage: allocating %u blocks", MAX_BLOCKS);
     blk_bitmap = bm_alloc(1024);
     total_storage = BLOCK_SIZE * MAX_BLOCKS;
     blocks = NULL;
     should_sort = 0;
 }
 
-static int compare_blks(const void *a, const void *b) {
+static int cl_compare_blocks(const void *a, const void *b) {
     const block *ba = (const block *)a;
     const block *bb = (const block *)b;
     if (ba->no > bb->no) {
@@ -104,21 +70,21 @@ static int compare_blks(const void *a, const void *b) {
     return -1;
 }
 
-void sort_blocks() {
+void cl_sort_blocks() {
     if (block_count == 0) {
         return;
     }
 
-    qsort(blocks, block_count, sizeof(block *), compare_blks);
+    qsort(blocks, block_count, sizeof(block *), cl_compare_blocks);
 }
 
-blk_no *storage_write(const char *data, const size_t size, size_t *blk_count) {
+blk_no *cl_write_storage(const char *data, const size_t size, size_t *blk_count) {
     *blk_count = size / BLOCK_SIZE;
     if (size % BLOCK_SIZE != 0) {
         (*blk_count)++;
     }
 
-    log_trace("storage_write: writing %lu bytes into %lu blocks of size %lu",
+    log_trace("cl_write_storage: writing %lu bytes into %lu blocks of size %lu",
               size, *blk_count, BLOCK_SIZE);
 
     void *offset = (void *)data;
@@ -128,15 +94,15 @@ blk_no *storage_write(const char *data, const size_t size, size_t *blk_count) {
 
     for (size_t i = 0; i < *blk_count; i++) {
         size_t block_size = remaining > BLOCK_SIZE ? BLOCK_SIZE : remaining;
-        block *blk = make_block(offset, block_size);
+        block *blk = cl_new_block(offset, block_size);
 
         if (blk == NULL) {
-            log_error("storage_write: failed to allocate block.");
+            log_error("cl_write_storage: failed to allocate block.");
             return NULL;
         }
-        block_write(blk);
+        cl_write_block(blk);
         result[i] = blk->no;
-        log_trace("storage_write: writing %u on block %u", block_size, blk->no);
+        log_trace("cl_write_storage: writing %u on block %u", block_size, blk->no);
         offset += BLOCK_SIZE;
         remaining -= BLOCK_SIZE;
     }
@@ -144,12 +110,12 @@ blk_no *storage_write(const char *data, const size_t size, size_t *blk_count) {
     return result;
 }
 
-int storage_read(char *buf, size_t size, blk_no *blks, size_t blk_count) {
+int cl_read_storage(char *buf, size_t size, blk_no *blks, size_t blk_count) {
     void *offset = buf;
 
     for (size_t i = 0; i < blk_count; i++) {
         blk_no no = blks[i];
-        block *blk = get_block(no);
+        block *blk = cl_get_block(no);
 
         memcpy(offset, blk->content, blk->size);
         offset += blk->size;
@@ -158,7 +124,7 @@ int storage_read(char *buf, size_t size, blk_no *blks, size_t blk_count) {
     return 0;
 }
 
-void block_write(block *blk) {
+void cl_write_block(block *blk) {
     ++block_count;
     size_t new_size = block_count * sizeof(block *);
     if (block_count == 0) {
@@ -170,13 +136,13 @@ void block_write(block *blk) {
     should_sort = 1;
 }
 
-block *get_block(blk_no no) {
+block *cl_get_block(blk_no no) {
     if (block_count == 0) {
         return NULL;
     }
 
     if (should_sort) {
-        sort_blocks();
+        cl_sort_blocks();
     }
 
     for (size_t i = 0; i < block_count; i++) {
