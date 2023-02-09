@@ -12,7 +12,7 @@
 
 #include "fs.h"
 #include "inode.h"
-#include "storage.h"
+#include "block_allocator.h"
 #include "dir.h"
 #include "inode_alloc.h"
 
@@ -22,13 +22,18 @@ static struct options {
     const char *filename;
     const char *contents;
     int show_help;
+    int verbose;
 } options;
 
 #define OPTION(t, p)                                                           \
     { t, offsetof(struct options, p), 1 }
 
 static const struct fuse_opt option_spec[] = {
-    OPTION("-h", show_help), OPTION("--help", show_help), FUSE_OPT_END};
+    OPTION("-h", show_help),
+    OPTION("--help", show_help),
+    OPTION("-v", verbose),
+    FUSE_OPT_END
+};
 
 static void show_help(const char *progname) {
     printf("usage: %s [options] <mountpoint>\n\n", progname);
@@ -52,33 +57,29 @@ void *cool_init(struct fuse_conn_info *conn) {
     cl_add_dir(root, "boot", cl_new_dir());
     cl_add_dir(root, "root", cl_new_dir());
     cl_add_dir(root, "bin", cl_new_dir());
-    cool_dirent *etc = cl_add_dir(root, "etc", cl_new_dir());
+    cl_add_dir(root, "etc", cl_new_dir());
     cool_dirent *home = cl_add_dir(root, "home", cl_new_dir());
     cool_dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
     cl_add_dir(jay->node.dir, ".config", cl_new_dir());
-    cl_add_file(jay->node.dir, ".bashrc", cl_new_file(cl_new_inode()->st->st_ino));
+
+    cool_inode *bashrc = cl_new_inode();
+    cl_add_file(jay->node.dir, ".bashrc", cl_new_file(bashrc->st->st_ino));
     cl_add_dir(root, "var", cl_new_dir());
 
-    cl_print_root(root);
+    const char bashrc_content[] =     
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do\n"
+            "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut\n"
+            "enim ad minim veniam, quis nostrud exercitation ullamco laboris\n"
+            "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in\n"
+            "reprehenderit in voluptate velit esse cillum dolore eu fugiat\n"
+            "nulla pariatur. Excepteur sint occaecat cupidatat non proident,\n"
+            "sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
+
+    cl_write_storage(bashrc_content, sizeof(bashrc_content) - 1, bashrc);
+
+    // cl_print_root(root);
 
     cl_fsinit(fs_root);
-
-    // add_child(
-    //     root,
-    //     cl_new_inode_raw(
-    //         2, "lorem",
-    //         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
-    //         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut "
-    //         "enim ad minim veniam, quis nostrud exercitation ullamco laboris "
-    //         "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in "
-    //         "reprehenderit in voluptate velit esse cillum dolore eu fugiat "
-    //         "nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
-    //         "sunt in culpa qui officia deserunt mollit anim id est laborum."));
-    // add_child(root, cl_new_inode_raw(3, "bar", "I am bar"));
-    // add_child(root, cl_new_inode_raw(4, "baz", "I am baz"));
-    // add_child(root, mk_dir(5, "subdir"));
-
-    // print_tree(root, 0);
 
     log_info("initialized.");
 
@@ -89,11 +90,15 @@ static const struct fuse_operations operations = {
     .init = cool_init,
 
     .getattr = cl_getattr,
+    .access = cl_access,
 
     .readdir = cl_readdir,
 
     .open = cl_open,
     .read = cl_read,
+    .write = cl_write,
+
+    .chmod = cl_chmod,
 };
 
 int main(int argc, char *argv[]) {
@@ -102,11 +107,6 @@ int main(int argc, char *argv[]) {
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
     log_set_level(0);
-    log_info("starting coolfs...");
-
-    FILE *storage = fopen("cool.disk", "wb");
-    // cl_mkfs(storage);
-    cl_init_storage(storage);
 
     if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
         return 1;
@@ -116,6 +116,18 @@ int main(int argc, char *argv[]) {
         assert(fuse_opt_add_arg(&args, "--help") == 0);
         args.argv[0][0] = '\0';
     }
+
+    if (options.verbose) {
+        log_set_level(LOG_TRACE);
+    } else {
+        log_set_level(LOG_INFO);
+    }
+
+    log_info("starting coolfs...");
+
+    FILE *storage = fopen("cool.disk", "wb");
+    // cl_mkfs(storage);
+    cl_init_storage(storage);
 
     ret = fuse_main(args.argc, args.argv, &operations, NULL);
 

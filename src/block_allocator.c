@@ -1,16 +1,18 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include "log/log.h"
 
 #include "bitmap.h"
-#include "storage.h"
+#include "block_allocator.h"
 #include "constants.h"
+#include "inode.h"
 
 static block **blocks;
-static size_t block_count;
+static size_t allocated_blocks;
 static int should_sort;
 bitmap *blk_bitmap;
 FILE *disk;
@@ -22,7 +24,7 @@ block *cl_new_block(const char *data, const size_t size) {
         return NULL;
     }
 
-    blk_no no;
+    size_t no;
     if (bm_get(blk_bitmap, &no) != 0) {
         log_error("could not allocate block: no empty block free.");
         return NULL;
@@ -31,6 +33,8 @@ block *cl_new_block(const char *data, const size_t size) {
     block *blk = malloc(sizeof(block));
     blk->no = no;
     blk->size = size;
+
+    log_info("[block] creating block %lu", blk->no);
 
     char *content = malloc(size);
     memcpy(content, data, size);
@@ -44,7 +48,7 @@ block *cl_new_block(const char *data, const size_t size) {
 }
 
 void cl_storage_dispose() {
-    for (size_t i = 0; i < block_count; i++) {
+    for (size_t i = 0; i < allocated_blocks; i++) {
         free(blocks[i]->content);
         free(blocks[i]);
     }
@@ -52,7 +56,7 @@ void cl_storage_dispose() {
 
 void cl_init_storage(FILE *file) {
     disk = file;
-    block_count = 0;
+    allocated_blocks = 0;
     log_trace("cl_init_storage: allocating %u blocks", MAX_BLOCKS);
     blk_bitmap = bm_alloc(1024);
     total_storage = BLOCK_SIZE * MAX_BLOCKS;
@@ -71,53 +75,85 @@ static int cl_compare_blocks(const void *a, const void *b) {
 }
 
 void cl_sort_blocks() {
-    if (block_count == 0) {
+    if (allocated_blocks == 0) {
         return;
     }
 
-    qsort(blocks, block_count, sizeof(block *), cl_compare_blocks);
+    qsort(blocks, allocated_blocks, sizeof(block *), cl_compare_blocks);
 }
 
-blk_no *cl_write_storage(const char *data, const size_t size, size_t *blk_count) {
-    *blk_count = size / BLOCK_SIZE;
+int cl_write_storage(const char *data, const size_t size, cool_inode *inode) {
+    size_t count = size / BLOCK_SIZE;
+
     if (size % BLOCK_SIZE != 0) {
-        (*blk_count)++;
+        count++;
     }
 
-    log_trace("cl_write_storage: writing %lu bytes into %lu blocks of size %lu",
-              size, *blk_count, BLOCK_SIZE);
+    if (count > 10) {
+        log_error("too many blocks");
+        return -1;
+    }
+
+    log_trace("[block] writing %lu bytes into %lu blocks of size %lu",
+              size, count, BLOCK_SIZE);
 
     void *offset = (void *)data;
     size_t remaining = size;
 
-    blk_no *result = malloc(sizeof(blk_no) * *blk_count);
+    size_t *result = malloc(sizeof(size_t) * count);
 
-    for (size_t i = 0; i < *blk_count; i++) {
+    for (size_t i = 0; i < count; i++) {
         size_t block_size = remaining > BLOCK_SIZE ? BLOCK_SIZE : remaining;
         block *blk = cl_new_block(offset, block_size);
 
         if (blk == NULL) {
-            log_error("cl_write_storage: failed to allocate block.");
-            return NULL;
+            log_error("[block] failed to allocate block.");
+            return -1;
         }
         cl_write_block(blk);
         result[i] = blk->no;
-        log_trace("cl_write_storage: writing %u on block %u", block_size, blk->no);
+        log_trace("[block] writing %u on block %u", block_size, blk->no);
         offset += BLOCK_SIZE;
         remaining -= BLOCK_SIZE;
+        inode->first_blocks[i] = blk->no;
     }
 
-    return result;
+    inode->st->st_size = size;
+    inode->st->st_blksize = BLOCK_SIZE;
+    log_info("[block] total size: %lu bytes", inode->st->st_size);
+
+    memcpy(inode->first_blocks, result, count);
+
+    return 0;
 }
 
-int cl_read_storage(char *buf, size_t size, blk_no *blks, size_t blk_count) {
+int cl_read_storage(char *buf, size_t size, size_t *blks) {
     void *offset = buf;
 
-    for (size_t i = 0; i < blk_count; i++) {
-        blk_no no = blks[i];
+    size_t block_count = size / BLOCK_SIZE;
+
+
+    if (size % BLOCK_SIZE != 0) {
+        block_count++;
+    }
+    
+    log_trace("[block] %lu blocks to read", block_count);
+
+    for (size_t i = 0; i < block_count; i++) {
+        if (blks[i] == SIZE_MAX) {
+            log_error("[block] trying to read a non allocated block");
+            return -1;
+        }
+        size_t no = blks[i];
         block *blk = cl_get_block(no);
 
+        if (blk == NULL) {
+            log_error("[block] could not get block %u", no);
+            return -1;
+        }
+
         memcpy(offset, blk->content, blk->size);
+        log_trace("[block] read %lu bytes successfully", size);
         offset += blk->size;
     }
 
@@ -125,19 +161,20 @@ int cl_read_storage(char *buf, size_t size, blk_no *blks, size_t blk_count) {
 }
 
 void cl_write_block(block *blk) {
-    ++block_count;
-    size_t new_size = block_count * sizeof(block *);
-    if (block_count == 0) {
+    ++allocated_blocks;
+    size_t new_size = allocated_blocks * sizeof(block *);
+    if (allocated_blocks == 0) {
         blocks = malloc(new_size);
     } else {
         blocks = realloc(blocks, new_size);
     }
-    blocks[block_count - 1] = blk;
+    blocks[allocated_blocks - 1] = blk;
     should_sort = 1;
 }
 
-block *cl_get_block(blk_no no) {
-    if (block_count == 0) {
+block *cl_get_block(size_t no) {
+    if (allocated_blocks == 0) {
+        log_error("[block] there are zero blocks allocated");
         return NULL;
     }
 
@@ -145,7 +182,7 @@ block *cl_get_block(blk_no no) {
         cl_sort_blocks();
     }
 
-    for (size_t i = 0; i < block_count; i++) {
+    for (size_t i = 0; i < allocated_blocks; i++) {
         block *blk = blocks[i];
         if (blk->no == no) {
             return blk;

@@ -30,4 +30,11 @@ int cl_getattr(const char *path, struct stat *st);
 int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                  off_t offset, struct fuse_file_info *fi);
 
+int cl_write(const char *path, const char *buf, size_t size,
+             off_t offset, struct fuse_file_info *fi);
+
+int cl_chmod(const char *path, mode_t mode);
+
+int cl_access(const char *path, int mode);
+
 #endif /* _COOLFS_H_ */

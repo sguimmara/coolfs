@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <sys/stat.h>
 #include "inode_alloc.h"
 #include "inode.h"
 #include "bitmap.h"

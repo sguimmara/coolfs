@@ -10,11 +10,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "bitmap.h"
+#include "block_allocator.h"
+#include "constants.h"
 #include "dir.h"
 #include "fs.h"
 #include "inode.h"
-#include "bitmap.h"
-#include "constants.h"
 #include "inode_alloc.h"
 
 #include "log/log.h"
@@ -64,14 +65,15 @@ int cl_mkfs(const char *filename) {
     }
     log_info("mkfs: reserving area for inodes (%u bytes)", inode_area);
 
-    char* reserved = calloc(inode_area, 1);
+    char *reserved = calloc(inode_area, 1);
     fwrite(reserved, inode_area, 1, file);
     free(reserved);
     remaining -= inode_area;
 
     size_t block_count = remaining / BLOCK_SIZE;
     if (block_count < MIN_BLOCKS) {
-        log_error("not enough space to allocate at least %u blocks", MIN_BLOCKS);
+        log_error("not enough space to allocate at least %u blocks",
+                  MIN_BLOCKS);
         fclose(file);
         return 1;
     }
@@ -105,7 +107,7 @@ cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
     assert(root != NULL);
     assert(path != NULL);
 
-    log_debug("cl_find_dirent: %s", path);
+    log_debug("[resolve] %s", path);
 
     if (strcmp(path, PATH_SEP) == 0) {
         log_trace("%s -> root", path);
@@ -128,7 +130,7 @@ cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
         fragment = strtok(NULL, PATH_SEP);
         if (fragment == NULL) {
             free(cpy);
-            log_debug("cool_find_inode: %s -> inode %s", path, cur->name);
+            log_debug("[resolve] %s -> inode %s", path, cur->name);
             return cur;
         }
     }
@@ -139,12 +141,10 @@ cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
 
 cool_dirent *root;
 
-void cl_fsinit(cool_dirent *rootent) {
-    root = rootent;
-}
+void cl_fsinit(cool_dirent *rootent) { root = rootent; }
 
-int cl_open_dev(const char* filename) {
-    FILE *file = fopen(filename, "r+"); 
+int cl_open_dev(const char *filename) {
+    FILE *file = fopen(filename, "r+");
     if (file == NULL) {
         log_error("could not open %s", filename);
         return 1;
@@ -176,60 +176,67 @@ int cl_open_dev(const char* filename) {
 }
 
 int cl_read(const char *path, char *buf, size_t size, off_t offset,
-              struct fuse_file_info *fi) {
-    log_debug("[read] %s (bufsize: %zo)", path, size);
+            struct fuse_file_info *fi) {
+    log_info("[read] %s (bufsize: %zo)", path, size);
 
-    // cool_inode *inode = cool_find_inode(path);
+    cool_dirent *ent = cl_find_dirent(path, root);
 
-    // if (inode != NULL) {
-    //     off_t size = inode->st->st_size;
-    //     log_trace("[read] copying content of %lo bytes", size);
-    //     cl_read_inode(buf, inode, size, offset);
-    //     return size;
-    // }
+    if (ent != NULL) {
+        if (ent->type == S_IFREG) {
+            cool_inode *inode = cl_get_inode(ent->node.file->inode);
+            size_t filesize = inode->st->st_size;
+            log_info("[read] copying content of %lo bytes", filesize);
+            cl_read_storage(buf, filesize, inode->first_blocks);
+            return filesize;
+        }
+        log_error("[read] not a regular file: %s", path);
+        return -1;
+    }
+
+    log_error("[read] no such file: %s", path);
 
     return -1;
 }
 
 int cl_open(const char *path, struct fuse_file_info *fi) {
-    log_debug(path);
-    fi->fh = 10;
+    log_info("[open] %s", path);
     return 0;
 }
 
 int cl_getattr(const char *path, struct stat *st) {
-    log_debug("[getattr] %s", path);
-
     memset(st, 0, sizeof(struct stat));
 
     cool_dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
-        log_debug("[getattr] %s -> ENOENT", path);
+        log_trace("[getattr] %s -> ENOENT", path);
         return -ENOENT;
     }
 
     if (ent->type == S_IFREG) {
         cool_inode *inode = cl_get_inode(ent->node.file->inode);
         memcpy(st, inode->st, sizeof(struct stat));
-        log_debug("[getattr] %s -> success", path);
+        log_info("[getattr] %s", path);
         return 0;
-    } if (ent->type == S_IFDIR) {
+    }
+    if (ent->type == S_IFDIR) {
         memcpy(st, ent->node.dir->stat, sizeof(struct stat));
-        log_debug("[getattr] %s -> success", path);
+        log_info("[getattr] %s", path);
         return 0;
     }
 
-    log_debug("[getattr] %s -> ENOENT", path);
+    log_trace("[getattr] %s -> ENOENT", path);
     return -ENOENT;
 }
 
+int cl_access(const char *path, int mode) {
+    return 0;
+}
+
 int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                 off_t offset, struct fuse_file_info *fi) {
+               off_t offset, struct fuse_file_info *fi) {
     (void)offset;
     (void)fi;
-
-    log_trace("[readdir] %s", path);
 
     cool_dirent *ent = cl_find_dirent(path, root);
 
@@ -246,9 +253,54 @@ int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         if (child != NULL) {
             filler(buf, child->name, cl_get_stat(child), 0);
         } else {
-            log_warn("NULL child");
+            log_warn("[readdir] NULL child");
         }
     }
 
+    log_info("[readdir] %s", path);
     return 0;
+}
+
+int cl_chmod(const char *path, mode_t mode) {
+    log_trace("[chmod] %s %o", path, mode);
+    cool_dirent *ent = cl_find_dirent(path, root);
+
+    if (ent == NULL) {
+        log_error("[chmod] %s -> ENOENT", path);
+        return -ENOENT;
+    }
+
+    switch (ent->type) {
+        case S_IFREG:
+            cl_get_inode(ent->node.file->inode)->st->st_mode = mode;
+            break;
+        case S_IFDIR:
+            ent->node.dir->stat->st_mode = mode;
+            break;
+    }
+
+    log_info("[chmod] %s -> %o", path, mode);
+
+    return 0;
+}
+
+int cl_write(const char *path, const char *buf, size_t size,
+             off_t offset, struct fuse_file_info *fi) {
+
+    cool_dirent *ent = cl_find_dirent(path, root);
+
+    if (ent == NULL) {
+        log_error("[write] %s -> ENOENT", path);
+        return -ENOENT;
+    }
+
+    if (ent->type != S_IFREG) {
+        log_error("[write] %s -> not a regular file", path);
+        return -ENOENT;
+    }
+
+    cool_inode *inode = cl_get_inode(ent->node.file->inode);
+    cl_write_storage(buf, size, inode);
+
+    return size;
 }

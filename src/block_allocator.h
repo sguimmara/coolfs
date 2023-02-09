@@ -5,12 +5,11 @@
 #include <sys/stat.h>
 
 #include "constants.h"
-
-typedef size_t blk_no;
+#include "inode.h"
 
 /** A data block */
 typedef struct block {
-    blk_no no;
+    size_t no;
     size_t size;
     char *content;
 } block;
@@ -33,7 +32,7 @@ block *cl_new_block(const char *data, const size_t size);
  * @param no The block number.
  * @return block* The block if found, otherwise NULL.
  */
-block *cl_get_block(blk_no no);
+block *cl_get_block(size_t no);
 
 /**
  * @brief Writes the block in the storage.
@@ -48,10 +47,10 @@ void cl_write_block(block *blk);
  *
  * @param buf  The buffer to write.
  * @param size The buffer size.
- * @param block_count The number of blocks written.
- * @return blno_t* The array of block numbers.
+ * @param inode The inode to update with block information.
+ * @return int The status
  */
-blk_no *cl_write_storage(const char *data, const size_t size, size_t *block_count);
+int cl_write_storage(const char *data, const size_t size, cool_inode *inode);
 
 /**
  * @brief Reads the specified blocks, then writes their content into the buffer.
@@ -62,6 +61,6 @@ blk_no *cl_write_storage(const char *data, const size_t size, size_t *block_coun
  * @param blk_count The number of blocks to read.
  * @return int The status.
  */
-int cl_read_storage(char *buf, size_t size, blk_no *blks, size_t blk_count);
+int cl_read_storage(char *buf, size_t size, size_t *blks);
 
 #endif /* _STORAGE_H_ */

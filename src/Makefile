@@ -9,36 +9,36 @@ RM = rm -f
 NAME = coolfs
 INSTALL_PREFIX = /usr/bin
 
-INCLUDES=fs.h storage.h inode.h bitmap.h dir.h inode_alloc.h
-OBJS=fs.o storage.o inode.o log.o bitmap.o dir.o inode_alloc.o
+INCLUDES=fs.h block_allocator.h inode.h bitmap.h dir.h inode_alloc.h constants.h
+OBJS=fs.o block_allocator.o inode.o log.o bitmap.o dir.o inode_alloc.o
 
 default: coolfs mkcoolfs coolfsck
 
 log.o: log/log.c
 	$(CC) $(OPTS) -c $< -o $@
 
-storage.o: storage.c storage.h
+block_allocator.o: block_allocator.c block_allocator.h constants.h
 	$(CC) $(OPTS) -c $< -o $@
 
-inode.o: inode.c inode.h
+inode.o: inode.c inode.h constants.h
 	$(CC) $(OPTS) -c $< -o $@
 
-inode_alloc.o: inode_alloc.c inode_alloc.h
+inode_alloc.o: inode_alloc.c inode_alloc.h constants.h
 	$(CC) $(OPTS) -c $< -o $@
 
-dir.o: dir.c dir.h
+dir.o: dir.c dir.h constants.h
 	$(CC) $(OPTS) -c $< -o $@
 
-bitmap.o: bitmap.c bitmap.h
+bitmap.o: bitmap.c bitmap.h constants.h
 	$(CC) $(OPTS) -c $< -o $@
-
-coolfs.o: coolfs.c inode.h fs.h storage.h
+ 
+coolfs.o: coolfs.c inode.h fs.h block_allocator.h constants.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
-fs.o: fs.c fs.h inode.h
+fs.o: fs.c fs.h inode.h constants.h
 	$(CC) $(OPTS) -c $< -o $@ $(LIBS)
 
-minimal: inode.o storage.o log.o
+minimal: inode.o block_allocator.o log.o
 
 lib$(NAME).so: $(OBJS) $(INCLUDES)
 	$(CC) $(OPTS) -shared $^ -o $@ $(LIBS)
