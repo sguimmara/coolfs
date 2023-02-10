@@ -12,3 +12,4 @@ test:
 
 clean:
 	$(MAKE) -C src clean
+	$(MAKE) -C test clean

@@ -3,7 +3,7 @@ LIBFUSE ?= $(shell pkg-config --cflags --libs fuse)
 LIBS = $(LIBFUSE)
 DEFINES = -D_POSIX_SOURCE=200809L -DLOG_USE_COLOR
 C_STD = -std=c18
-FLAGS = -Wall -g -fPIC
+FLAGS = -Wall -Werror -g -fPIC
 OPTS = $(FLAGS) $(C_STD) $(DEFINES)
 RM = rm -f
 NAME = coolfs
@@ -43,13 +43,13 @@ minimal: inode.o block_allocator.o log.o
 lib$(NAME).so: $(OBJS) $(INCLUDES)
 	$(CC) $(OPTS) -shared $^ -o $@ $(LIBS)
 
-mkcoolfs: mkcoolfs.c $(OBJS)
+mkcoolfs: mkcoolfs.c $(OBJS) $(INCLUDES)
 	$(CC) $(OPTS) $^ -o $@ $(LIBS)
 
-coolfsck: coolfsck.c $(OBJS)
+coolfsck: coolfsck.c $(OBJS) $(INCLUDES)
 	$(CC) $(OPTS) $^ -o $@ $(LIBS)
 
-coolfs: coolfs.c $(OBJS)
+coolfs: coolfs.c $(OBJS) $(INCLUDES)
 	$(CC) $(OPTS) $^ -o $@ $(LIBS)
 
 clean:
@@ -58,6 +58,8 @@ clean:
 	$(RM) *.so
 	$(RM) coolfs
 	$(RM) mkcoolfs
+	$(RM) coolfsck
+	$(RM) *.disk
 
 install: build
 	cp $(NAME).out $(INSTALL_PREFIX)/$(NAME)

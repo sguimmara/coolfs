@@ -35,6 +35,14 @@ int cl_write(const char *path, const char *buf, size_t size,
 
 int cl_chmod(const char *path, mode_t mode);
 
+int cl_chown(const char *path, uid_t uid, gid_t gid);
+
 int cl_access(const char *path, int mode);
+
+int cl_unlink(const char *path);
+
+int cl_create(const char *path, mode_t mode, struct fuse_file_info *fi);
+
+int cl_rmdir(const char *path);
 
 #endif /* _COOLFS_H_ */

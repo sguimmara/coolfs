@@ -45,6 +45,7 @@ cool_dir *cl_new_dir();
 cool_freg *cl_new_file(ino_t inode);
 cool_dirent *cl_add_file(cool_dir *dir, char *name, cool_freg* file);
 cool_dirent *cl_add_dir(cool_dir *dir, char *name, cool_dir* subdir);
+void cl_remove_entry(cool_dir *dir, cool_dirent *entry);
 cool_dirent *cl_get_dirent(cool_dirent *parent, const char *name);
 
 void cl_print_root(cool_dir* root);

@@ -23,6 +23,7 @@ static struct options {
     const char *contents;
     int show_help;
     int verbose;
+    int set_trace;
 } options;
 
 #define OPTION(t, p)                                                           \
@@ -31,6 +32,7 @@ static struct options {
 static const struct fuse_opt option_spec[] = {
     OPTION("-h", show_help),
     OPTION("--help", show_help),
+    OPTION("--trace", set_trace),
     OPTION("-v", verbose),
     FUSE_OPT_END
 };
@@ -99,6 +101,10 @@ static const struct fuse_operations operations = {
     .write = cl_write,
 
     .chmod = cl_chmod,
+    .chown = cl_chown,
+    .unlink = cl_unlink,
+    .rmdir = cl_rmdir,
+    .create = cl_create,
 };
 
 int main(int argc, char *argv[]) {
@@ -118,9 +124,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (options.verbose) {
-        log_set_level(LOG_TRACE);
+        log_set_level(LOG_DEBUG);
     } else {
         log_set_level(LOG_INFO);
+    }
+
+    if (options.set_trace) {
+        log_set_level(LOG_TRACE);
     }
 
     log_info("starting coolfs...");

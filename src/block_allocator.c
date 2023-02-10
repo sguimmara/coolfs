@@ -74,6 +74,15 @@ static int cl_compare_blocks(const void *a, const void *b) {
     return -1;
 }
 
+void cl_free_block(size_t no) {
+    if (no == SIZE_MAX) {
+        return;
+    }
+    bm_unset(blk_bitmap, no);
+    free(blocks[no]);
+    log_debug("freeing block %lu", no);
+}
+
 void cl_sort_blocks() {
     if (allocated_blocks == 0) {
         return;

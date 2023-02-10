@@ -5,7 +5,7 @@
 
 #include "test.h"
 
-#include "../src/storage.h"
+#include "../src/block_allocator.h"
 
 void size_should_match() {
     char *data = "abc";

@@ -35,6 +35,13 @@ block *cl_new_block(const char *data, const size_t size);
 block *cl_get_block(size_t no);
 
 /**
+ * @brief Frees the block.
+ * 
+ * @param no The block number.
+ */
+void cl_free_block(size_t no);
+
+/**
  * @brief Writes the block in the storage.
  *
  * @param blk The block to write.

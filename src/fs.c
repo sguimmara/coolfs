@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "bitmap.h"
 #include "block_allocator.h"
@@ -37,18 +38,18 @@ int cl_mkfs(const char *filename) {
 
     size_t remaining = st.st_size;
 
-    log_info("%s: %lu bytes available", filename, st.st_size);
+    log_debug("%s: %lu bytes available", filename, st.st_size);
 
-    log_info("mkfs: writing magic number");
+    log_debug("mkfs: writing magic number");
     fwrite(MAGIC, sizeof(char), 6, file);
     remaining -= 6;
 
-    log_info("mkfs: writing block size (%u)", BLOCK_SIZE);
+    log_debug("mkfs: writing block size (%u)", BLOCK_SIZE);
     const u_int16_t bs = (u_int16_t)BLOCK_SIZE;
     fwrite(&bs, sizeof(bs), 1, file);
     remaining -= sizeof(bs);
 
-    log_info("mkfs: writing inode bitmap (%u inodes)", MAX_INODES);
+    log_debug("mkfs: writing inode bitmap (%u inodes)", MAX_INODES);
     bitmap *inode_bm = bm_alloc(MAX_INODES);
     fwrite(&inode_bm->bits, sizeof(size_t), 1, file);
     fwrite(&inode_bm->size, sizeof(size_t), 1, file);
@@ -63,7 +64,7 @@ int cl_mkfs(const char *filename) {
         fclose(file);
         return 1;
     }
-    log_info("mkfs: reserving area for inodes (%u bytes)", inode_area);
+    log_debug("mkfs: reserving area for inodes (%u bytes)", inode_area);
 
     char *reserved = calloc(inode_area, 1);
     fwrite(reserved, inode_area, 1, file);
@@ -78,7 +79,7 @@ int cl_mkfs(const char *filename) {
         return 1;
     }
 
-    log_info("mkfs: writing block bitmap (%u blocks)", block_count);
+    log_debug("mkfs: writing block bitmap (%u blocks)", block_count);
     bitmap *blk_bm = bm_alloc(block_count);
     fwrite(&blk_bm->bits, sizeof(size_t), 1, file);
     fwrite(&blk_bm->size, sizeof(size_t), 1, file);
@@ -94,24 +95,28 @@ int cl_mkfs(const char *filename) {
         fclose(file);
         return 1;
     }
-    log_info("mkfs: block area: %lu", block_count * BLOCK_SIZE);
+    log_debug("mkfs: block area: %lu", block_count * BLOCK_SIZE);
     remaining -= block_count * BLOCK_SIZE;
 
-    log_info("unused: %u bytes", remaining);
-    log_info("successfully created disk file");
+    log_debug("unused: %u bytes", remaining);
+    log_debug("successfully created disk file");
     fclose(file);
     return 0;
 }
 
-cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
+void cl_find_dirent_with_parent(const char *path, cool_dirent *root,
+                                cool_dirent **result, cool_dirent **parent) {
     assert(root != NULL);
     assert(path != NULL);
 
-    log_debug("[resolve] %s", path);
+    *parent = NULL;
+    *result = NULL;
+
+    log_trace("find %s -> start", path);
 
     if (strcmp(path, PATH_SEP) == 0) {
-        log_trace("%s -> root", path);
-        return root;
+        log_trace("find %s -> root", path);
+        *result = root;
     }
 
     cool_dirent *cur = root;
@@ -121,22 +126,32 @@ cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
     char *fragment = strtok(cpy, PATH_SEP);
 
     while (fragment) {
+        *parent = cur;
         cur = cl_get_dirent(cur, fragment);
         if (cur == NULL) {
             free(cpy);
-            return NULL;
+            log_trace("find %s -> end (failure)", path);
+            *result = NULL;
+            return;
         }
 
         fragment = strtok(NULL, PATH_SEP);
         if (fragment == NULL) {
             free(cpy);
-            log_debug("[resolve] %s -> inode %s", path, cur->name);
-            return cur;
+            log_trace("[resolve] %s -> inode %s", path, cur->name);
+            *result = cur;
+            return;
         }
     }
 
     free(cpy);
-    return NULL;
+}
+
+cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
+    cool_dirent *result;
+    cool_dirent *parent;
+    cl_find_dirent_with_parent(path, root, &result, &parent);
+    return result;
 }
 
 cool_dirent *root;
@@ -150,7 +165,7 @@ int cl_open_dev(const char *filename) {
         return 1;
     }
 
-    log_trace("checking magic number");
+    log_debug("checking magic number");
 
     for (size_t i = 0; i < 6; i++) {
         if ((char)fgetc(file) != MAGIC[i]) {
@@ -161,7 +176,7 @@ int cl_open_dev(const char *filename) {
 
     u_int16_t block_size;
     fread(&block_size, sizeof(uint16_t), 1, file);
-    log_info("block size: %hu", block_size);
+    log_debug("block size: %hu", block_size);
 
     // inode bitmap
     size_t inode_bm_bits;
@@ -170,14 +185,14 @@ int cl_open_dev(const char *filename) {
     fread(&inode_bm_bytes, sizeof(size_t), 1, file);
     bitmap *inode_bm = bm_alloc(inode_bm_bits);
     fread(inode_bm->buf, inode_bm_bytes, 1, file);
-    log_info("inode bitmap size: %lu", inode_bm_bits);
+    log_debug("inode bitmap size: %lu", inode_bm_bits);
 
     return 0;
 }
 
 int cl_read(const char *path, char *buf, size_t size, off_t offset,
             struct fuse_file_info *fi) {
-    log_info("[read] %s (bufsize: %zo)", path, size);
+    log_debug("[read] %s (bufsize: %zo)", path, size);
 
     cool_dirent *ent = cl_find_dirent(path, root);
 
@@ -185,7 +200,7 @@ int cl_read(const char *path, char *buf, size_t size, off_t offset,
         if (ent->type == S_IFREG) {
             cool_inode *inode = cl_get_inode(ent->node.file->inode);
             size_t filesize = inode->st->st_size;
-            log_info("[read] copying content of %lo bytes", filesize);
+            log_debug("[read] copying content of %lo bytes", filesize);
             cl_read_storage(buf, filesize, inode->first_blocks);
             return filesize;
         }
@@ -199,7 +214,8 @@ int cl_read(const char *path, char *buf, size_t size, off_t offset,
 }
 
 int cl_open(const char *path, struct fuse_file_info *fi) {
-    log_info("[open] %s", path);
+    // TODO what should we do here ? see open(2)
+    log_debug("[open] %s", path);
     return 0;
 }
 
@@ -209,27 +225,151 @@ int cl_getattr(const char *path, struct stat *st) {
     cool_dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
-        log_trace("[getattr] %s -> ENOENT", path);
+        log_debug("[getattr] %s -> ENOENT", path);
         return -ENOENT;
     }
 
     if (ent->type == S_IFREG) {
         cool_inode *inode = cl_get_inode(ent->node.file->inode);
         memcpy(st, inode->st, sizeof(struct stat));
-        log_info("[getattr] %s", path);
+        log_debug("[getattr] %s", path);
         return 0;
     }
     if (ent->type == S_IFDIR) {
         memcpy(st, ent->node.dir->stat, sizeof(struct stat));
-        log_info("[getattr] %s", path);
+        log_debug("[getattr] %s", path);
         return 0;
     }
 
-    log_trace("[getattr] %s -> ENOENT", path);
+    log_debug("[getattr] %s -> ENOENT", path);
     return -ENOENT;
 }
 
+struct cool_inode *get_inode_safe(cool_dirent *ent) {
+    return cl_get_inode(ent->node.file->inode);
+}
+
+struct stat *cl_stat(cool_dirent *ent) {
+    switch (ent->type) {
+    case S_IFREG:
+        cool_inode *ino = cl_get_inode(ent->node.file->inode);
+        if (ino != NULL) {
+            return ino->st;
+        }
+        break;
+    case S_IFDIR:
+        return ent->node.dir->stat;
+    }
+
+    return NULL;
+}
+
 int cl_access(const char *path, int mode) {
+    cool_dirent *ent = cl_find_dirent(path, root);
+
+    if (ent == NULL) {
+        log_debug("[access] %s -> ENOENT", path);
+        if (mode == F_OK) {
+            errno = ENOENT;
+            return -1;
+        }
+    }
+
+    // TODO implement proper access() logic (see access(2))
+    log_debug("[access] %s (mode %o) -> OK", path, mode);
+    return 0;
+    // struct stat *st = cl_stat(ent);
+    // mode_t curmode = st->st_mode;
+
+    // switch (mode) {
+    //     case R_OK:
+    //         return curmode & R_OK != 0
+    // }
+
+    // log_debug("[access] %s (current: %o, compared: %o)", path, st->st_mode,
+    // mode); if ((st->st_mode & mode) == mode) {
+    //     return 0;
+    // }
+
+    // errno = EACCES;
+    // return -1;
+}
+
+int cl_unlink(const char *path) {
+    cool_dirent *ent;
+    cool_dirent *parent;
+    cl_find_dirent_with_parent(path, root, &ent, &parent);
+
+    if (ent == NULL) {
+        log_debug("[unlink] %s -> ENOENT", path);
+        return -ENOENT;
+    }
+
+    struct stat *st = cl_stat(ent);
+
+    if (st->st_nlink == 1) {
+        log_debug("[unlink] %s -> freeing inode", path);
+        cool_inode *inode = get_inode_safe(ent);
+        for (size_t i = 0; i < 10; i++) {
+            cl_free_block(inode->first_blocks[i]);
+        }
+
+        cl_free_inode(inode);
+    }
+
+    cl_remove_entry(parent->node.dir, ent);
+
+    return 0;
+}
+
+int cl_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+    cool_dirent *ent;
+    cool_dirent *parent;
+    cl_find_dirent_with_parent(path, root, &ent, &parent);
+
+    if (parent == NULL) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    if (parent->type != S_IFDIR) {
+        errno = ENOTDIR;
+        return -1;
+    }
+
+    cool_inode *inode = cl_new_inode();
+    cl_add_file(parent->node.dir, "NEWFILE", cl_new_file(inode->st->st_ino));
+
+    return 0;
+}
+
+int cl_rmdir(const char *path) {
+    cool_dirent *ent;
+    cool_dirent *parent;
+    cl_find_dirent_with_parent(path, root, &ent, &parent);
+
+    if (ent == NULL) {
+        log_debug("[rmdir] %s -> ENOENT", path);
+        errno = ENOENT;
+        return -1;
+    }
+
+    if (ent->type != S_IFDIR) {
+        log_debug("[rmdir] %s -> ENOTDIR", path);
+        errno = ENOTDIR;
+        return -1;
+    }
+
+    if (ent->node.dir->entry_cnt > 0) {
+        log_debug("[rmdir] %s -> ENOTEMPTY", path);
+        errno = ENOTEMPTY;
+        return -1;
+    }
+
+    cl_remove_entry(parent->node.dir, ent);
+
+    log_debug("[rmdir] %s -> OK", path);
+
     return 0;
 }
 
@@ -241,7 +381,7 @@ int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     cool_dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
-        log_trace("[readdir] %s -> ENOENT", path);
+        log_debug("[readdir] %s -> ENOENT", path);
         return -ENOENT;
     }
 
@@ -257,12 +397,26 @@ int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         }
     }
 
-    log_info("[readdir] %s", path);
+    log_debug("[readdir] %s", path);
+    return 0;
+}
+
+int cl_chown(const char *path, uid_t uid, gid_t gid) {
+    cool_dirent *ent = cl_find_dirent(path, root);
+    if (ent == NULL) {
+        log_error("[chmod] %s -> ENOENT", path);
+        return -ENOENT;
+    }
+
+    struct stat *st = cl_stat(ent);
+    st->st_uid = uid;
+    st->st_gid = gid;
+
     return 0;
 }
 
 int cl_chmod(const char *path, mode_t mode) {
-    log_trace("[chmod] %s %o", path, mode);
+    log_debug("[chmod] %s %o", path, mode);
     cool_dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
@@ -270,22 +424,16 @@ int cl_chmod(const char *path, mode_t mode) {
         return -ENOENT;
     }
 
-    switch (ent->type) {
-        case S_IFREG:
-            cl_get_inode(ent->node.file->inode)->st->st_mode = mode;
-            break;
-        case S_IFDIR:
-            ent->node.dir->stat->st_mode = mode;
-            break;
-    }
+    struct stat *st = cl_stat(ent);
+    st->st_mode = mode;
 
-    log_info("[chmod] %s -> %o", path, mode);
+    log_debug("[chmod] %s -> %o", path, mode);
 
     return 0;
 }
 
-int cl_write(const char *path, const char *buf, size_t size,
-             off_t offset, struct fuse_file_info *fi) {
+int cl_write(const char *path, const char *buf, size_t size, off_t offset,
+             struct fuse_file_info *fi) {
 
     cool_dirent *ent = cl_find_dirent(path, root);
 
@@ -301,6 +449,8 @@ int cl_write(const char *path, const char *buf, size_t size,
 
     cool_inode *inode = cl_get_inode(ent->node.file->inode);
     cl_write_storage(buf, size, inode);
+
+    log_debug("[write] %s -> OK (%lu bytes)", path, size);
 
     return size;
 }

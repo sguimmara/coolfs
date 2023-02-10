@@ -23,6 +23,7 @@ cool_inode *cl_new_inode_raw(ino_t n) {
     st->st_uid = 1000;
     st->st_gid = 1000;
     st->st_ino = n;
+    st->st_nlink = 1;
     st->st_mode = S_IFREG | 0444;
     st->st_size = 0;
     time_t t = time(NULL);

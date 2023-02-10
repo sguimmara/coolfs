@@ -95,11 +95,44 @@ cool_dirent *cl_add_dir(cool_dir *dir, char *name, cool_dir *subdir) {
     return new_entry;
 }
 
+int push_null_at_end(const void *a, const void *b) {
+    cool_dirent **aa = (cool_dirent**)a;
+    cool_dirent **bb = (cool_dirent**)b;
+    if (*aa == NULL && *bb != NULL) {
+        return 1;
+    }
+
+    if (*bb == NULL && *aa != NULL) {
+        return -1;
+    }
+
+    return 0;
+}
+
+void cl_remove_entry(cool_dir *dir, cool_dirent *entry) {
+    size_t index = -1;
+    for (size_t i = 0; i < dir->entry_cnt; i++) {
+        if (dir->entries[i] == entry) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index != -1) {
+        dir->entries[index] = NULL;
+        qsort(dir->entries, dir->entry_cnt, sizeof(cool_dirent*), push_null_at_end);
+        size_t new_count = dir->entry_cnt - 1;
+        dir->entries = realloc(dir->entries, sizeof(cool_dirent*) * new_count);
+        dir->entry_cnt = new_count;
+        
+        log_debug("[remove_entry] -> OK");
+    }
+}
+
 cool_dirent *cl_get_dirent(cool_dirent *parent, const char *name) {
     if (parent->type == S_IFDIR) {
         cool_dir *dir = parent->node.dir;
         for (size_t i = 0; i < dir->entry_cnt; i++) {
-
             cool_dirent *child = dir->entries[i];
             if (strcmp(child->name, name) == 0) {
                 return child;
