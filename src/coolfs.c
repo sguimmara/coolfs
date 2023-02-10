@@ -1,4 +1,4 @@
-#define FUSE_USE_VERSION 26
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -43,11 +43,6 @@ static void show_help(const char *progname) {
 
 void *cool_init(struct fuse_conn_info *conn) {
     (void)conn;
-
-    // Don't buffer stdout
-    setbuf(stdout, NULL);
-
-    log_info("initializing coolfs...");
 
     // cool_inode *root = mk_root();
 
@@ -112,7 +107,11 @@ int main(int argc, char *argv[]) {
 
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
+    // Don't buffer stdout
+    setbuf(stdout, NULL);
     log_set_level(0);
+
+    log_info("%s", PACKAGE_STRING);
 
     if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
         return 1;
@@ -132,8 +131,6 @@ int main(int argc, char *argv[]) {
     if (options.set_trace) {
         log_set_level(LOG_TRACE);
     }
-
-    log_info("starting coolfs...");
 
     FILE *storage = fopen("cool.disk", "wb");
     // cl_mkfs(storage);

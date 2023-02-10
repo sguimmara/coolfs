@@ -8,6 +8,8 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include "../config.h"
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
