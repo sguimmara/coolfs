@@ -1,5 +1,5 @@
-#ifndef _COOL_DIR_H_
-#define _COOL_DIR_H_
+#ifndef _COOL_DIRENT_H_
+#define _COOL_DIRENT_H_
 
 #include "config.h"
 
@@ -78,16 +78,4 @@ int remove(Dirent *parent, Dirent *child);
 
 Dirent *find_descendant(Dirent* root, const PathBuf* path);
 
-// struct stat *cl_get_stat(Dirent *dirent);
-// Dirent *cl_new_root();
-// cool_dir *cl_new_dir();
-// cool_freg *cl_new_file(ino_t inode);
-// Dirent *cl_add_file(cool_dir *dir, char *name, cool_freg* file);
-// Dirent *cl_add_dir(cool_dir *dir, char *name, cool_dir* subdir);
-// void cl_remove_entry(cool_dir *dir, Dirent *entry);
-// Dirent *cl_get_dirent(Dirent *parent, const char *name);
-
-// void cl_print_root(cool_dir* root);
-// void cl_print_dirent(Dirent *ent, int level);
-
-#endif /* _COOL_DIR_H_ */
+#endif /* _COOL_DIRENT_H_ */
