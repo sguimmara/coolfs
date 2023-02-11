@@ -4,6 +4,8 @@ A toy FUSE filesystem.
 
 ## Getting started
 
+You will need autotool to generate the Makefiles.
+
 To compile, you need `libfuse` installed. On debian-based distributions:
 
 ```shell
@@ -13,13 +15,14 @@ sudo apt install -y libfuse-dev
 Then compile with `make`:
 
 ```shell
+./configure
 make
 ```
 
 Execute tests with:
 
 ```shell
-make test
+make check
 ```
 
 ## Design
