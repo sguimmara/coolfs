@@ -1,0 +1,5 @@
+Running suite(s): path
+ bitmap
+ Dirent
+100%: Checks: 8, Failures: 0, Errors: 0
+PASS check_coolfs (exit status: 0)

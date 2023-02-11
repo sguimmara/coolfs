@@ -1,0 +1,3 @@
+Running suite(s): path
+100%: Checks: 4, Failures: 0, Errors: 0
+PASS check_path (exit status: 0)

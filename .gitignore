@@ -114,3 +114,6 @@ Makefile
 *~
 *.tar.gz
 *.tar.bz2
+
+*.trs
+*.log

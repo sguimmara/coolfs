@@ -104,8 +104,8 @@ int cl_mkfs(const char *filename) {
     return 0;
 }
 
-void cl_find_dirent_with_parent(const char *path, cool_dirent *root,
-                                cool_dirent **result, cool_dirent **parent) {
+void cl_find_dirent_with_parent(const char *path, Dirent *root,
+                                Dirent **result, Dirent **parent) {
     assert(root != NULL);
     assert(path != NULL);
 
@@ -119,7 +119,7 @@ void cl_find_dirent_with_parent(const char *path, cool_dirent *root,
         *result = root;
     }
 
-    cool_dirent *cur = root;
+    Dirent *cur = root;
     char *cpy = malloc(strlen(path) + 1);
     strcpy(cpy, path);
 
@@ -147,16 +147,16 @@ void cl_find_dirent_with_parent(const char *path, cool_dirent *root,
     free(cpy);
 }
 
-cool_dirent *cl_find_dirent(const char *path, cool_dirent *root) {
-    cool_dirent *result;
-    cool_dirent *parent;
+Dirent *cl_find_dirent(const char *path, Dirent *root) {
+    Dirent *result;
+    Dirent *parent;
     cl_find_dirent_with_parent(path, root, &result, &parent);
     return result;
 }
 
-cool_dirent *root;
+Dirent *root;
 
-void cl_fsinit(cool_dirent *rootent) { root = rootent; }
+void cl_fsinit(Dirent *rootent) { root = rootent; }
 
 int cl_open_dev(const char *filename) {
     FILE *file = fopen(filename, "r+");
@@ -194,7 +194,7 @@ int cl_read(const char *path, char *buf, size_t size, off_t offset,
             struct fuse_file_info *fi) {
     log_debug("[read] %s (bufsize: %zo)", path, size);
 
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
 
     if (ent != NULL) {
         if (ent->type == S_IFREG) {
@@ -222,7 +222,7 @@ int cl_open(const char *path, struct fuse_file_info *fi) {
 int cl_getattr(const char *path, struct stat *st) {
     memset(st, 0, sizeof(struct stat));
 
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
         log_debug("[getattr] %s -> ENOENT", path);
@@ -245,11 +245,11 @@ int cl_getattr(const char *path, struct stat *st) {
     return -ENOENT;
 }
 
-struct cool_inode *get_inode_safe(cool_dirent *ent) {
+struct cool_inode *get_inode_safe(Dirent *ent) {
     return cl_get_inode(ent->node.file->inode);
 }
 
-struct stat *cl_stat(cool_dirent *ent) {
+struct stat *cl_stat(Dirent *ent) {
     switch (ent->type) {
     case S_IFREG:
         cool_inode *ino = cl_get_inode(ent->node.file->inode);
@@ -265,7 +265,7 @@ struct stat *cl_stat(cool_dirent *ent) {
 }
 
 int cl_access(const char *path, int mode) {
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
         log_debug("[access] %s -> ENOENT", path);
@@ -296,8 +296,8 @@ int cl_access(const char *path, int mode) {
 }
 
 int cl_unlink(const char *path) {
-    cool_dirent *ent;
-    cool_dirent *parent;
+    Dirent *ent;
+    Dirent *parent;
     cl_find_dirent_with_parent(path, root, &ent, &parent);
 
     if (ent == NULL) {
@@ -323,8 +323,8 @@ int cl_unlink(const char *path) {
 }
 
 int cl_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
-    cool_dirent *ent;
-    cool_dirent *parent;
+    Dirent *ent;
+    Dirent *parent;
     cl_find_dirent_with_parent(path, root, &ent, &parent);
 
     if (parent == NULL) {
@@ -344,8 +344,8 @@ int cl_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
 }
 
 int cl_rmdir(const char *path) {
-    cool_dirent *ent;
-    cool_dirent *parent;
+    Dirent *ent;
+    Dirent *parent;
     cl_find_dirent_with_parent(path, root, &ent, &parent);
 
     if (ent == NULL) {
@@ -378,7 +378,7 @@ int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     (void)offset;
     (void)fi;
 
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
         log_debug("[readdir] %s -> ENOENT", path);
@@ -389,7 +389,7 @@ int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     filler(buf, "..", NULL, 0);
 
     for (size_t i = 0; i < ent->node.dir->entry_cnt; i++) {
-        cool_dirent *child = ent->node.dir->entries[i];
+        Dirent *child = ent->node.dir->entries[i];
         if (child != NULL) {
             filler(buf, child->name, cl_get_stat(child), 0);
         } else {
@@ -402,7 +402,7 @@ int cl_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 
 int cl_chown(const char *path, uid_t uid, gid_t gid) {
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
     if (ent == NULL) {
         log_error("[chmod] %s -> ENOENT", path);
         return -ENOENT;
@@ -417,7 +417,7 @@ int cl_chown(const char *path, uid_t uid, gid_t gid) {
 
 int cl_chmod(const char *path, mode_t mode) {
     log_debug("[chmod] %s %o", path, mode);
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
         log_error("[chmod] %s -> ENOENT", path);
@@ -435,7 +435,7 @@ int cl_chmod(const char *path, mode_t mode) {
 int cl_write(const char *path, const char *buf, size_t size, off_t offset,
              struct fuse_file_info *fi) {
 
-    cool_dirent *ent = cl_find_dirent(path, root);
+    Dirent *ent = cl_find_dirent(path, root);
 
     if (ent == NULL) {
         log_error("[write] %s -> ENOENT", path);

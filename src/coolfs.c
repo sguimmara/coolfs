@@ -46,7 +46,7 @@ void *cool_init(struct fuse_conn_info *conn) {
 
     // cool_inode *root = mk_root();
 
-    cool_dirent *fs_root = cl_new_root();
+    Dirent *fs_root = cl_new_root();
     cool_dir *root = fs_root->node.dir;
 
     cl_init_inode_allocator(MAX_INODES);
@@ -55,8 +55,8 @@ void *cool_init(struct fuse_conn_info *conn) {
     cl_add_dir(root, "root", cl_new_dir());
     cl_add_dir(root, "bin", cl_new_dir());
     cl_add_dir(root, "etc", cl_new_dir());
-    cool_dirent *home = cl_add_dir(root, "home", cl_new_dir());
-    cool_dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
+    Dirent *home = cl_add_dir(root, "home", cl_new_dir());
+    Dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
     cl_add_dir(jay->node.dir, ".config", cl_new_dir());
 
     cool_inode *bashrc = cl_new_inode();

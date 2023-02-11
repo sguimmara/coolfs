@@ -3,52 +3,45 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "inode.h"
-
-struct cool_dir;
 
 /**
  * @brief A directory entry.
  */
-typedef struct cool_dirent {
+typedef struct Dirent {
     char *name;
-    int type;
+    ino_t ino;
+    mode_t mode;
+    size_t size;
+    uid_t uid;
+    gid_t gid;
+    time_t ctime;
+    time_t atime;
+    time_t mtime;
 
     union {
-        struct cool_dir  *dir;
-        struct cool_freg *file;
+        struct Dir_entries  *entries;
     } node;
-} cool_dirent;
+} Dirent;
 
 /**
- * @brief A directory.
+ * @brief The children of a directory.
  * 
  */
-typedef struct cool_dir {
-    struct stat *stat;
-    struct cool_dirent **entries;
+typedef struct Dir_entries {
     size_t entry_cnt;
-} cool_dir;
+    struct Dirent **entries;
+} Dir_entries;
 
-/**
- * @brief A regular file.
- * 
- */
-typedef struct cool_freg {
-    ino_t inode;
-} cool_freg;
+// struct stat *cl_get_stat(Dirent *dirent);
+// Dirent *cl_new_root();
+// cool_dir *cl_new_dir();
+// cool_freg *cl_new_file(ino_t inode);
+// Dirent *cl_add_file(cool_dir *dir, char *name, cool_freg* file);
+// Dirent *cl_add_dir(cool_dir *dir, char *name, cool_dir* subdir);
+// void cl_remove_entry(cool_dir *dir, Dirent *entry);
+// Dirent *cl_get_dirent(Dirent *parent, const char *name);
 
-
-struct stat *cl_get_stat(cool_dirent *dirent);
-cool_dirent *cl_new_root();
-cool_dir *cl_new_dir();
-cool_freg *cl_new_file(ino_t inode);
-cool_dirent *cl_add_file(cool_dir *dir, char *name, cool_freg* file);
-cool_dirent *cl_add_dir(cool_dir *dir, char *name, cool_dir* subdir);
-void cl_remove_entry(cool_dir *dir, cool_dirent *entry);
-cool_dirent *cl_get_dirent(cool_dirent *parent, const char *name);
-
-void cl_print_root(cool_dir* root);
-void cl_print_dirent(cool_dirent *ent, int level);
+// void cl_print_root(cool_dir* root);
+// void cl_print_dirent(Dirent *ent, int level);
 
 #endif /* _COOL_DIR_H_ */

@@ -4,6 +4,12 @@
 /* Use FUSE 2.6 */
 #define FUSE_USE_VERSION 26
 
+/* Define to 1 if you have the <check.h> header file. */
+#define HAVE_CHECK_H 1
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#define HAVE_DLFCN_H 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
@@ -36,6 +42,9 @@
 
 /* Use colored log output */
 #define LOG_USE_COLOR /**/
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#define LT_OBJDIR ".libs/"
 
 /* Name of package */
 #define PACKAGE "coolfs"

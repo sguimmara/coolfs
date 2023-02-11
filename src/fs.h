@@ -16,7 +16,7 @@
  */
 int cl_mkfs(const char* filename);
 
-void cl_fsinit(cool_dirent *root);
+void cl_fsinit(Dirent *root);
 
 int cl_open_dev(const char *filename);
 
