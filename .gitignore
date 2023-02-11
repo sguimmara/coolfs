@@ -117,3 +117,7 @@ Makefile
 
 *.trs
 *.log
+
+.libs
+
+bincheck*

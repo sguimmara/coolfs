@@ -7,9 +7,6 @@
 /* Define to 1 if you have the <check.h> header file. */
 #define HAVE_CHECK_H 1
 
-/* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
@@ -43,9 +40,6 @@
 /* Use colored log output */
 #define LOG_USE_COLOR /**/
 
-/* Define to the sub-directory where libtool stores uninstalled libraries. */
-#define LT_OBJDIR ".libs/"
-
 /* Name of package */
 #define PACKAGE "coolfs"
 
@@ -77,3 +71,9 @@
 
 /* Required by FUSE */
 #define _FILE_OFFSET_BITS 64
+
+/* Required for file types (S_IFREG, S_IFDIR) */
+#define _XOPEN_SOURCE 1
+
+/* Required for file types (S_IFREG, S_IFDIR) */
+#define __USE_XOPEN 1
