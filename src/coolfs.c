@@ -1,5 +1,7 @@
 #include "config.h"
 
+#ifdef HAVE_LIBFUSE
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -146,3 +148,14 @@ int main(int argc, char *argv[]) {
 
     return ret;
 }
+
+#else
+
+#include <stdio.h>
+
+int main(void) {
+    fprintf(stderr, "FUSE is not available in this system. Exiting.\n");
+    return 1;
+}
+
+#endif /* HAVE_LIBFUSE */

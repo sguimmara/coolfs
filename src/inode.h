@@ -53,6 +53,8 @@ typedef struct Inode {
 
 void inode_init();
 
+Inode *get_root();
+
 /**
  * @brief Get the inode by its number.
  * 
@@ -77,6 +79,11 @@ void remove_inode(const ino_t ino);
  */
 Inode* get_inode_by_path(const PathBuf *path);
 
+/**
+ * @brief Create a filesystem root, with UID and GID both to 0.
+ * 
+ * @return Inode* 
+ */
 Inode *create_filesystem_root();
 
 Inode *create_directory(const Inode* parent);
@@ -95,26 +102,6 @@ int remove_entry(Inode *parent, ino_t inode);
 /**
  * @brief Returns the status of inode.
  */
-void stat_inode(const Inode *dirent, struct stat *st);
-
-/**
- * @brief Adds a child to the dirent.
- * 
- * @param parent 
- * @param child 
- * @return int zero if success, ENOTDIR if parent is not a directory.
- */
-int add_child(DirInode *parent, DirInode *child);
-
-/**
- * @brief Removes the child from the parent.
- * 
- * @param parent 
- * @param child 
- * @return int 
- */
-int remove(DirInode *parent, DirInode *child);
-
-DirInode *find_descendant(DirInode* root, const PathBuf* path);
+void stat_inode(const Inode *inode, struct stat *st);
 
 #endif /* _COOL_DIRENT_H_ */

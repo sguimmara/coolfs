@@ -69,5 +69,5 @@
 /* Required by FUSE */
 #define _FILE_OFFSET_BITS 64
 
-/* Required for POSIX stat() */
+/* Enable POSIX */
 #define _POSIX_C_SOURCE 200809

@@ -4,8 +4,6 @@ coolfs_SOURCES = coolfs.c \
                  constants.h \
                  path.c path.h \
                  bitmap.c bitmap.h \
+                 fuseimpl.c fuseimpl.h \
                  fs.c fs.h \
-                 inode.c inode.h \
-                 inode_alloc.c inode_alloc.h \
-                 dir.c dir.h \
-                 block_allocator.c block_allocator.h
+                 inode.c inode.h

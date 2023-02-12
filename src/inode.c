@@ -32,6 +32,10 @@ void remove_inode(const ino_t ino) {
     inodes[ino] = NULL;
 }
 
+Inode *get_root() {
+    return root;
+}
+
 ino_t get_ino_t() {
     size_t number;
     // check that we have not reached the max capacity of inodes
@@ -180,7 +184,9 @@ Inode* get_inode_by_path(const PathBuf *path) {
         return root;
     }
 
-    Inode* current = root;
+    // TODO expose API to easily retrieve parent in one pass
+    Inode *current = root;
+    Inode *parent = NULL;
 
     for (size_t i = 0; i < path->count; i++) {
         const char *fragment = path->fragments[i];
@@ -191,6 +197,7 @@ Inode* get_inode_by_path(const PathBuf *path) {
         if (current->data.dir.entry_count > 0) {
             for (size_t i = 0; i < current->data.dir.entry_count; i++) {
                 if (strcmp(current->data.dir.entries[i].name, fragment) == 0) {
+                    parent = current;
                     current = get_inode(current->data.dir.entries[i].inode);
                     break;
                 }

@@ -176,7 +176,7 @@ START_TEST(check_get_inode) {
 }
 END_TEST
 
-Suite *Dirent_suite(void) {
+Suite *suite(void) {
     Suite *s = suite_create("Dirent");
 
     TCase *tc = tcase_create("core");
@@ -196,7 +196,7 @@ Suite *Dirent_suite(void) {
 int main(void) {
     int number_failed;
     Suite *s;
-    SRunner *sr = srunner_create(Dirent_suite());
+    SRunner *sr = srunner_create(suite());
 
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);
