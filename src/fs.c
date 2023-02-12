@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "log/log.h"
 
@@ -156,7 +157,7 @@ int _create(const char *path, mode_t mode) {
         return -errno;
     }
 
-    if (S_ISDIR(parent->mode)) {
+    if (!S_ISDIR(parent->mode)) {
         return -ENOTDIR;
     }
 

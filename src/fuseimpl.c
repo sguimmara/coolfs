@@ -13,6 +13,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "log/log.h"
+
 #include "fuseimpl.h"
 #include "bitmap.h"
 #include "block_allocator.h"
@@ -20,8 +22,6 @@
 #include "inode.h"
 #include "fs.h"
 #include "path.h"
-
-#include "log/log.h"
 
 void fuse_init() {
     fs_init();

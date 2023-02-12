@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "log/log.h"
+
 #include "fs.h"
 
 void print_help() {

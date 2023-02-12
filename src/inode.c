@@ -7,9 +7,10 @@
 #include <errno.h>
 #include <assert.h>
 
+#include "log/log.h"
+
 #include "bitmap.h"
 #include "inode.h"
-#include "log/log.h"
 
 #define INODE_TABLE_SIZE 2048
 
@@ -132,7 +133,7 @@ Inode *create_directory(const Inode* parent) {
 
 int add_entry(Inode* parent, const char *name, ino_t inode) {
     if (S_ISDIR(parent->mode) != 1) {
-        return ENOTDIR;
+        return -ENOTDIR;
     }
 
     DirEnt *entries = parent->data.dir.entries;
@@ -144,6 +145,7 @@ int add_entry(Inode* parent, const char *name, ino_t inode) {
     size_t len = namelen > MAX_PATH ? MAX_PATH : namelen;
     strncpy(new.name, name, len);
 
+    // FIXME cannot add more than 1 entry using the CLI
     entries[parent->data.dir.entry_count] = new;
     parent->data.dir.entry_count++;
 
@@ -163,7 +165,7 @@ int entry_index(const Inode *parent, ino_t ino) {
 
 int remove_entry(Inode *parent, ino_t inode) {
     if (S_ISDIR(parent->mode) != 1) {
-        return ENOTDIR;
+        return -ENOTDIR;
     }
 
     int idx = entry_index(parent, inode);
@@ -185,6 +187,7 @@ Inode *get_inode(ino_t ino) {
 
 int get_inode_and_parent_by_path(const PathBuf *path,
                                  Inode **inode, Inode** parent) {
+    log_trace("locate...");
     if (path->count == 0) {
         *inode = root;
         *parent = NULL;
@@ -199,6 +202,7 @@ int get_inode_and_parent_by_path(const PathBuf *path,
     for (size_t i = 0; i < path->count; i++) {
         const char *fragment = path->fragments[i];
         if (!S_ISDIR(current->mode)) {
+            log_trace("fragment %s is not a directory", fragment);
             errno = ENOTDIR;
             return -1;
         }

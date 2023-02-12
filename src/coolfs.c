@@ -12,9 +12,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "log/log.h"
+
 #include "fuseimpl.h"
 #include "inode.h"
-#include "log/log.h"
 
 #define ROOT get_root()
 
@@ -141,7 +142,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (options.set_trace) {
-        log_set_level(log_debug);
+        log_set_level(LOG_DEBUG);
     }
 
     // FILE *storage = fopen("cool.disk", "wb");
