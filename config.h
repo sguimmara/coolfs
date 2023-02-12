@@ -5,13 +5,13 @@
 #define FUSE_USE_VERSION 26
 
 /* Define to 1 if you have the <check.h> header file. */
-#define HAVE_CHECK_H 1
+/* #undef HAVE_CHECK_H */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `fuse' library (-lfuse). */
-#define HAVE_LIBFUSE 1
+/* #undef HAVE_LIBFUSE */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1

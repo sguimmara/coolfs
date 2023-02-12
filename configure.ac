@@ -7,7 +7,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])
 AC_CONFIG_SRCDIR(src/coolfs.c)
 
-AC_CHECK_HEADERS([unistd.h check.h])
+AC_CHECK_HEADERS([unistd.h])
 AC_CHECK_LIB([fuse], [fuse_main])
 PKG_CHECK_MODULES([CHECK], [check >= 0.15.0])
 

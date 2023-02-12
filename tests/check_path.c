@@ -3,7 +3,6 @@
 
 #include "../src/bitmap.h"
 #include "../src/path.h"
-#include "../src/dir.h"
 
 PathBuf *pb(const char *path) {
     PathBuf *res = malloc(sizeof(PathBuf));

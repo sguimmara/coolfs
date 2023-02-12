@@ -6,7 +6,7 @@
 #include <time.h>
 #include <errno.h>
 
-#include "../src/dir.h"
+#include "../src/dirent.h"
 
 START_TEST(new_dirent_assigns_correct_values) {
     Dirent* ent = new_dirent("foo", 32, S_IFREG, 1000, 1002);
@@ -83,7 +83,7 @@ START_TEST(find_descendant_returns_correct_value_for_root) {
     Dirent* b = new_dirent("b", 3, S_IFDIR, 1000, 1000);
     Dirent* c = new_dirent("c", 4, S_IFDIR, 1000, 1000);
     Dirent* d = new_dirent("d", 5, S_IFDIR, 1000, 1000);
-    Dirent* file = new_dirent("file", 6, __S_IFREG, 1000, 1000);
+    Dirent* file = new_dirent("file", 6, S_IFREG, 1000, 1000);
 
     // /a/b/c/d
     add_child(root, a);

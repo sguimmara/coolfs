@@ -93,6 +93,8 @@ int remove(Dirent *parent, Dirent *child) {
     qsort(parent->children, parent->child_count, sizeof(Dirent*), push_null_at_end);
     parent->children = realloc(parent->children, sizeof(Dirent*) * parent->child_count - 1);
     parent->child_count--;
+
+    return 0;
 }
 
 Dirent *find_descendant(Dirent *root, const PathBuf *path) {
