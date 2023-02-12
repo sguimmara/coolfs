@@ -67,14 +67,88 @@ START_TEST(check_chmod) {
 }
 END_TEST
 
+START_TEST(check_unlink) {
+    fs_init();
+
+    // /
+    //  file
+    //  dir/
+    Inode *dir = create_directory(get_root());
+    add_entry(get_root(), "dir", dir->number);
+
+    Inode *file = create_file(get_root());
+    add_entry(get_root(), "file", file->number);
+
+    ino_t dirno = dir->number;
+    ino_t fileno = file->number;
+
+    ck_assert_int_eq(_unlink("/"), -1);
+    ck_assert_int_eq(errno, EISDIR);
+
+    ck_assert_int_eq(_unlink("/dir"), -1);
+    ck_assert_int_eq(errno, EISDIR);
+
+    ck_assert_int_eq(get_root()->data.dir.entry_count, 2);
+    ck_assert_int_eq(_unlink("/file"), 0);
+    ck_assert_int_eq(get_root()->data.dir.entry_count, 1);
+
+    ck_assert_ptr_null(get_inode(fileno));
+}
+END_TEST
+
+START_TEST(check_rmdir) {
+    fs_init();
+
+    // /
+    //  file
+    //  dir/
+    //    subdir/
+    Inode *dir = create_directory(get_root());
+    add_entry(get_root(), "dir", dir->number);
+
+    Inode *file = create_file(get_root());
+    add_entry(get_root(), "file", file->number);
+
+    Inode *subdir = create_directory(dir);
+    add_entry(dir, "subdir", subdir->number);
+
+    ino_t dirno = dir->number;
+    ino_t subdirno = subdir->number;
+    ino_t fileno = file->number;
+
+    ck_assert_int_eq(_rmdir("/"), -1);
+    ck_assert_int_eq(errno, EACCES);
+
+    ck_assert_int_eq(_rmdir("/dir"), -1);
+    ck_assert_int_eq(errno, ENOTEMPTY);
+
+    ck_assert_int_eq(_rmdir("/file"), -1);
+    ck_assert_int_eq(errno, ENOTDIR);
+
+    ck_assert_int_eq(_rmdir("/dir/subdir"), 0);
+    ck_assert_int_eq(dir->data.dir.entry_count, 0);
+
+    ck_assert_int_eq(get_root()->data.dir.entry_count, 2);
+    ck_assert_int_eq(_rmdir("/dir"), 0);
+    ck_assert_int_eq(get_root()->data.dir.entry_count, 1);
+
+    ck_assert_ptr_eq(get_inode(get_root()->number), get_root());
+    ck_assert_ptr_null(get_inode(dirno));
+    ck_assert_ptr_null(get_inode(subdirno));
+    ck_assert_ptr_eq(get_inode(fileno), file);
+}
+END_TEST
+
 Suite *suite(void) {
-    Suite *s = suite_create("Dirent");
+    Suite *s = suite_create("fs");
 
     TCase *tc = tcase_create("core");
     {
         tcase_add_test(tc, check_getattr);
         tcase_add_test(tc, check_chown);
         tcase_add_test(tc, check_chmod);
+        tcase_add_test(tc, check_rmdir);
+        tcase_add_test(tc, check_unlink);
     }
     suite_add_tcase(s, tc);
 

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <unistd.h>
 
 #include "fs.h"
 #include "path.h"
@@ -56,9 +57,13 @@ int _chmod(const char *path, mode_t mode) {
 }
 
 int _rmdir(const char *path) {
-    Inode *inode = resolve(path);
+    PathBuf pb;
+    parse_path(path, &pb);
 
-    if (!inode) {
+    Inode *inode;
+    Inode *parent;
+
+    if (get_inode_and_parent_by_path(&pb, &inode, &parent) != 0) {
         return -1;
     }
 
@@ -68,6 +73,56 @@ int _rmdir(const char *path) {
         return -1;
     }
 
+    if (!S_ISDIR(inode->mode)) {
+        errno = ENOTDIR;
+        return -1;
+    }
+
+    if (inode->data.dir.entry_count != 0) {
+        errno = ENOTEMPTY;
+        return -1;
+    }
+
     remove_entry(parent, inode->number);
     remove_inode(inode->number);
+
+    return 0;
+}
+
+int _unlink(const char *path) {
+    PathBuf pb;
+    parse_path(path, &pb);
+
+    Inode *inode;
+    Inode *parent;
+
+    if (get_inode_and_parent_by_path(&pb, &inode, &parent) != 0) {
+        return -1;
+    }
+
+    if (S_ISDIR(inode->mode)) {
+        errno = EISDIR;
+        return -1;
+    }
+
+    remove_entry(parent, inode->number);
+    remove_inode(inode->number);
+
+    return 0;
+}
+
+int _access(const char *path, int mode) {
+    Inode * inode = resolve(path);
+
+    if (!inode) {
+        return -1;
+    }
+
+    if (mode == F_OK) {
+        return 0;
+    }
+
+    // TODO implement proper access() logic (see access(2))
+    errno = ENODEV;
+    return -1;
 }

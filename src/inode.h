@@ -79,6 +79,9 @@ void remove_inode(const ino_t ino);
  */
 Inode* get_inode_by_path(const PathBuf *path);
 
+int get_inode_and_parent_by_path(const PathBuf *path,
+                                 Inode **inode, Inode** parent);
+
 /**
  * @brief Create a filesystem root, with UID and GID both to 0.
  * 

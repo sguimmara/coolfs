@@ -15,4 +15,6 @@ int _chmod(const char *path, mode_t mode);
 
 int _rmdir(const char *path);
 
+int _unlink(const char *path);
+
 #endif /* _COOL_FS_H_ */

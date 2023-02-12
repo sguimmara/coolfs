@@ -177,7 +177,7 @@ START_TEST(check_get_inode) {
 END_TEST
 
 Suite *suite(void) {
-    Suite *s = suite_create("Dirent");
+    Suite *s = suite_create("inode");
 
     TCase *tc = tcase_create("core");
     {

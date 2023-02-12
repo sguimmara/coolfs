@@ -129,8 +129,6 @@ int add_entry(Inode* parent, const char *name, ino_t inode) {
         return ENOTDIR;
     }
 
-    assert(S_ISDIR(parent->mode) == 1);
-
     DirEnt *entries = parent->data.dir.entries;
     DirEnt new = { .inode = inode };
     
@@ -179,36 +177,55 @@ Inode *get_inode(ino_t ino) {
     return inodes[ino];
 }
 
-Inode* get_inode_by_path(const PathBuf *path) {
+int get_inode_and_parent_by_path(const PathBuf *path,
+                                 Inode **inode, Inode** parent) {
     if (path->count == 0) {
-        return root;
+        *inode = root;
+        *parent = NULL;
+        return 0;
     }
 
-    // TODO expose API to easily retrieve parent in one pass
     Inode *current = root;
-    Inode *parent = NULL;
+    Inode *prnt = NULL;
+
+    errno = 0;
 
     for (size_t i = 0; i < path->count; i++) {
         const char *fragment = path->fragments[i];
         if (!S_ISDIR(current->mode)) {
             errno = ENOTDIR;
-            return NULL;
+            return -1;
         }
         if (current->data.dir.entry_count > 0) {
             for (size_t i = 0; i < current->data.dir.entry_count; i++) {
                 if (strcmp(current->data.dir.entries[i].name, fragment) == 0) {
-                    parent = current;
+                    prnt = current;
                     current = get_inode(current->data.dir.entries[i].inode);
                     break;
                 }
             }
         } else {
             errno = ENOENT;
-            return NULL;
+            return -1;
         }
     }
-    
-    return current;
+
+    *inode = current;
+    *parent = prnt;
+    return 0;
+}
+
+Inode* get_inode_by_path(const PathBuf *path) {
+    Inode *result;
+    Inode *parent;
+
+    int ret = get_inode_and_parent_by_path(path, &result, &parent);
+
+    if (ret != 0) {
+        return NULL;
+    }
+
+    return result;
 }
 
 void stat_inode(const Inode *inode, struct stat *st) {
