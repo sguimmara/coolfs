@@ -4,9 +4,6 @@
 /* Use FUSE 2.6 */
 #define FUSE_USE_VERSION 26
 
-/* Define to 1 if you have the <check.h> header file. */
-/* #undef HAVE_CHECK_H */
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
@@ -72,8 +69,5 @@
 /* Required by FUSE */
 #define _FILE_OFFSET_BITS 64
 
-/* Required for file types (S_IFREG, S_IFDIR) */
-#define _XOPEN_SOURCE 1
-
-/* Required for file types (S_IFREG, S_IFDIR) */
-#define __USE_XOPEN 1
+/* Required for POSIX stat() */
+#define _POSIX_C_SOURCE 200809
