@@ -12,13 +12,16 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "fs.h"
+#include "fuseimpl.h"
 #include "inode.h"
-#include "block_allocator.h"
-#include "dir.h"
-#include "inode_alloc.h"
-
 #include "log/log.h"
+
+#define ROOT get_root()
+
+#define ADD_DIR(parent, name) \
+    { \
+        add_entry(parent, name, create_directory(parent)->number); \
+    }
 
 static struct options {
     const char *filename;
@@ -43,42 +46,49 @@ static void show_help(const char *progname) {
     printf("usage: %s [options] <mountpoint>\n\n", progname);
 }
 
-void *cool_init(struct fuse_conn_info *conn) {
+void *init(struct fuse_conn_info *conn) {
     (void)conn;
 
-    // cool_inode *root = mk_root();
+    fuse_init();
 
-    Dirent *fs_root = cl_new_root();
-    cool_dir *root = fs_root->node.dir;
+    ADD_DIR(ROOT, "bin")
+    ADD_DIR(ROOT, "usr")
+    ADD_DIR(ROOT, "etc")
+    ADD_DIR(ROOT, "boot")
+    ADD_DIR(ROOT, "root")
+    ADD_DIR(ROOT, "home")
 
-    cl_init_inode_allocator(MAX_INODES);
-    
-    cl_add_dir(root, "boot", cl_new_dir());
-    cl_add_dir(root, "root", cl_new_dir());
-    cl_add_dir(root, "bin", cl_new_dir());
-    cl_add_dir(root, "etc", cl_new_dir());
-    Dirent *home = cl_add_dir(root, "home", cl_new_dir());
-    Dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
-    cl_add_dir(jay->node.dir, ".config", cl_new_dir());
+    // Dirent *fs_root = cl_new_root();
+    // cool_dir *root = fs_root->node.dir;
 
-    cool_inode *bashrc = cl_new_inode();
-    cl_add_file(jay->node.dir, ".bashrc", cl_new_file(bashrc->st->st_ino));
-    cl_add_dir(root, "var", cl_new_dir());
+    // cl_init_inode_allocator(MAX_INODES);
 
-    const char bashrc_content[] =     
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do\n"
-            "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut\n"
-            "enim ad minim veniam, quis nostrud exercitation ullamco laboris\n"
-            "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in\n"
-            "reprehenderit in voluptate velit esse cillum dolore eu fugiat\n"
-            "nulla pariatur. Excepteur sint occaecat cupidatat non proident,\n"
-            "sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
+    // cl_add_dir(root, "boot", cl_new_dir());
+    // cl_add_dir(root, "root", cl_new_dir());
+    // cl_add_dir(root, "bin", cl_new_dir());
+    // cl_add_dir(root, "etc", cl_new_dir());
+    // Dirent *home = cl_add_dir(root, "home", cl_new_dir());
+    // Dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
+    // cl_add_dir(jay->node.dir, ".config", cl_new_dir());
 
-    cl_write_storage(bashrc_content, sizeof(bashrc_content) - 1, bashrc);
+    // cool_inode *bashrc = cl_new_inode();
+    // cl_add_file(jay->node.dir, ".bashrc", cl_new_file(bashrc->st->st_ino));
+    // cl_add_dir(root, "var", cl_new_dir());
 
-    // cl_print_root(root);
+    // const char bashrc_content[] =
+    //         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do\n"
+    //         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut\n"
+    //         "enim ad minim veniam, quis nostrud exercitation ullamco laboris\n"
+    //         "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in\n"
+    //         "reprehenderit in voluptate velit esse cillum dolore eu fugiat\n"
+    //         "nulla pariatur. Excepteur sint occaecat cupidatat non proident,\n"
+    //         "sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
 
-    cl_fsinit(fs_root);
+    // cl_write_storage(bashrc_content, sizeof(bashrc_content) - 1, bashrc);
+
+    // // cl_print_root(root);
+
+    // cl_fsinit(fs_root);
 
     log_info("initialized.");
 
@@ -86,22 +96,22 @@ void *cool_init(struct fuse_conn_info *conn) {
 }
 
 static const struct fuse_operations operations = {
-    .init = cool_init,
+    .init = init,
 
-    .getattr = cl_getattr,
-    .access = cl_access,
+    .getattr = fuse_getattr,
+    .access = fuse_access,
 
-    .readdir = cl_readdir,
+    .readdir = fuse_readdir,
 
-    .open = cl_open,
-    .read = cl_read,
-    .write = cl_write,
+    .open = fuse_open,
+    // .read = fuse_read,
+    // .write = fuse_write,
 
-    .chmod = cl_chmod,
-    .chown = cl_chown,
-    .unlink = cl_unlink,
-    .rmdir = cl_rmdir,
-    .create = cl_create,
+    .chmod = fuse_chmod,
+    .chown = fuse_chown,
+    .unlink = fuse_unlink,
+    .rmdir = fuse_rmdir,
+    .create = fuse_create,
 };
 
 int main(int argc, char *argv[]) {
@@ -131,19 +141,20 @@ int main(int argc, char *argv[]) {
     }
 
     if (options.set_trace) {
-        log_set_level(LOG_TRACE);
+        log_set_level(log_debug);
     }
 
-    FILE *storage = fopen("cool.disk", "wb");
-    // cl_mkfs(storage);
-    cl_init_storage(storage);
+    // FILE *storage = fopen("cool.disk", "wb");
+    // // cl_mkfs(storage);
+    // cl_init_storage(storage);
 
     ret = fuse_main(args.argc, args.argv, &operations, NULL);
 
     fuse_opt_free_args(&args);
 
-    cl_storage_dispose();
-    fclose(storage);
+    // TODO dispose FS
+    // cl_storage_dispose();
+    // fclose(storage);
     log_info("exiting");
 
     return ret;

@@ -1,7 +1,7 @@
+#include "config.h"
+
 #ifndef _COOL_DIRENT_H_
 #define _COOL_DIRENT_H_
-
-#include "config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -57,7 +57,7 @@ Inode *get_root();
 
 /**
  * @brief Get the inode by its number.
- * 
+ *
  * @param ino The inode number.
  * @return Inode* The inode, otherwise NULL if no inode is found.
  */
@@ -65,14 +65,14 @@ Inode *get_inode(ino_t ino);
 
 /**
  * @brief Removes the inode from the filesystem.
- * 
- * @param ino 
+ *
+ * @param ino
  */
 void remove_inode(const ino_t ino);
 
 /**
  * @brief Get the inode by path.
- * 
+ *
  * @param path The path to the inode.
  * @return Inode* The inode if found, otherwise NULL, and sets errno with the
  * appropriate error code.
@@ -84,8 +84,8 @@ int get_inode_and_parent_by_path(const PathBuf *path,
 
 /**
  * @brief Create a filesystem root, with UID and GID both to 0.
- * 
- * @return Inode* 
+ *
+ * @return Inode*
  */
 Inode *create_filesystem_root();
 
@@ -95,7 +95,7 @@ Inode *create_file(const Inode* parent);
 
 /**
  * @brief Add a directory entry to the parent inode.
- * 
+ *
  * @return int zero if success, ENOTDIR if parent is not a directory.
  */
 int add_entry(Inode* parent, const char *name, ino_t inode);

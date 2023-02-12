@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -7,6 +9,7 @@
 
 #include "bitmap.h"
 #include "inode.h"
+#include "log/log.h"
 
 #define INODE_TABLE_SIZE 2048
 
@@ -57,7 +60,10 @@ Inode *create_filesystem_root() {
     result->ctime = now;
     result->mtime = now;
 
-    result->mode = S_IFDIR;
+    result->mode = S_IFDIR |
+        S_IRUSR | S_IWUSR | S_IXUSR |
+        S_IRGRP |           S_IXGRP |
+        S_IROTH |           S_IXOTH;
 
     DirInode dir = {
         .entry_count = 0,
@@ -94,7 +100,7 @@ Inode *create_file(const Inode* parent) {
     result->data.file = file;
 
     inodes[result->number] = result;
-    
+
     return result;
 }
 
@@ -120,7 +126,7 @@ Inode *create_directory(const Inode* parent) {
     result->data.dir = dir;
 
     inodes[result->number] = result;
-    
+
     return result;
 }
 
@@ -131,7 +137,7 @@ int add_entry(Inode* parent, const char *name, ino_t inode) {
 
     DirEnt *entries = parent->data.dir.entries;
     DirEnt new = { .inode = inode };
-    
+
     // Truncate name to MAX_PATH if necessary
     // TODO add unit test for name truncation
     size_t namelen = strnlen(name, MAX_PATH);
@@ -151,7 +157,7 @@ int entry_index(const Inode *parent, ino_t ino) {
             return i;
         }
     }
-    
+
    return -1;
 }
 
@@ -232,6 +238,8 @@ void stat_inode(const Inode *inode, struct stat *st) {
     assert(inode != NULL);
     assert(st != NULL);
 
+    log_debug("[%s] inode %lu", __FUNCTION__, inode->number);
+
     st->st_ino = inode->number;
     st->st_atime = inode->atime;
     st->st_ctime = inode->ctime;
@@ -239,6 +247,7 @@ void stat_inode(const Inode *inode, struct stat *st) {
     st->st_mode = inode->mode;
     st->st_uid = inode->uid;
     st->st_gid = inode->gid;
+    st->st_nlink = 1; // TODO
 
     if (S_ISREG(inode->mode)) {
         st->st_size = inode->data.file.size;

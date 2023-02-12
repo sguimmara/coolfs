@@ -10,7 +10,7 @@ into an existing project and compiled along with it. The library provides 6
 function-like macros for logging:
 
 ```c
-log_trace(const char *fmt, ...);
+log_debug(const char *fmt, ...);
 log_debug(const char *fmt, ...);
 log_info(const char *fmt, ...);
 log_warn(const char *fmt, ...);
@@ -21,7 +21,7 @@ log_fatal(const char *fmt, ...);
 Each function takes a printf format string followed by additional arguments:
 
 ```c
-log_trace("Hello %s", "world")
+log_debug("Hello %s", "world")
 ```
 
 Resulting in a line with the given format printed to stderr:
@@ -40,7 +40,7 @@ will continue to write to files and callbacks if any are set.
 #### log_set_level(int level)
 The current logging level can be set by using the `log_set_level()` function.
 All logs below the given level will not be written to `stderr`. By default the
-level is `LOG_TRACE`, such that nothing is ignored.
+level is `log_debug`, such that nothing is ignored.
 
 
 #### log_add_fp(FILE *fp, int level)
