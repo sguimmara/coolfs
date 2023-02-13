@@ -23,6 +23,14 @@ typedef struct PathBuf {
 int parse_path(const char *buf, PathBuf *result);
 
 /**
+ * @brief Discards the error code.
+ *
+ * @param path
+ * @return PathBuf*
+ */
+PathBuf *parse_path_safe(const char *path);
+
+/**
  * @brief Returns the parent directory of the path.
  *
  * @return char*

@@ -9,12 +9,6 @@
 #include "../src/fs.h"
 #include "../src/inode.h"
 
-PathBuf *mk_path(const char *path) {
-    PathBuf *res = malloc(sizeof(PathBuf));
-    parse_path(path, res);
-    return res;
-}
-
 START_TEST(check_getattr) {
     fs_init();
 
@@ -109,15 +103,15 @@ START_TEST(check_create) {
     ck_assert_int_eq(_create("/dir/file1", 0555), 0);
     ck_assert_int_eq(_create("/dir/subdir/file2", 0777), 0);
 
-    Inode *file0 = get_inode_by_pathbuf(mk_path("/file0"));
+    Inode *file0 = get_inode_by_pathbuf(parse_path_safe("/file0"));
     ck_assert_ptr_nonnull(file0);
     ck_assert_int_eq(file0->mode, S_IFREG | 0500);
 
-    Inode *file1 = get_inode_by_pathbuf(mk_path("/dir/file1"));
+    Inode *file1 = get_inode_by_pathbuf(parse_path_safe("/dir/file1"));
     ck_assert_ptr_nonnull(file1);
     ck_assert_int_eq(file1->mode, S_IFREG | 0555);
 
-    Inode *file2 = get_inode_by_pathbuf(mk_path("/dir/subdir/file2"));
+    Inode *file2 = get_inode_by_pathbuf(parse_path_safe("/dir/subdir/file2"));
     ck_assert_ptr_nonnull(file2);
     ck_assert_int_eq(file2->mode, S_IFREG | 0777);
 }
@@ -128,13 +122,13 @@ START_TEST(check_rename) {
 
     _create("/src", S_IFDIR | 0444);
 
-    Inode *inode = get_inode_by_pathbuf(mk_path("/src"));
+    Inode *inode = get_inode_by_pathbuf(parse_path_safe("/src"));
 
     ck_assert_int_eq(_rename("/foo", "/dst"), -ENOENT);
     ck_assert_int_eq(_rename("/src", "/dst"), 0);
 
-    ck_assert_ptr_null(get_inode_by_pathbuf(mk_path("/src")));
-    ck_assert_ptr_eq(get_inode_by_pathbuf(mk_path("/dst")), inode);
+    ck_assert_ptr_null(get_inode_by_pathbuf(parse_path_safe("/src")));
+    ck_assert_ptr_eq(get_inode_by_pathbuf(parse_path_safe("/dst")), inode);
 }
 END_TEST
 
@@ -147,9 +141,9 @@ START_TEST(check_mkdir) {
 
     ck_assert_int_eq(_mkdir("/dir/X/b", 0777), -ENOENT);
 
-    Inode *dir = get_inode_by_pathbuf(mk_path("/dir"));
-    Inode *a = get_inode_by_pathbuf(mk_path("/dir/a"));
-    Inode *b = get_inode_by_pathbuf(mk_path("/dir/a/b"));
+    Inode *dir = get_inode_by_pathbuf(parse_path_safe("/dir"));
+    Inode *a = get_inode_by_pathbuf(parse_path_safe("/dir/a"));
+    Inode *b = get_inode_by_pathbuf(parse_path_safe("/dir/a/b"));
 
     ck_assert_int_eq(dir->mode, S_IFDIR | 0555);
     ck_assert_int_eq(a->mode, S_IFDIR | 0444);
@@ -163,8 +157,8 @@ START_TEST(check_utimens) {
     ck_assert_int_eq(_mkdir("/dir", 0555), 0);
     ck_assert_int_eq(_create("/dir/a", 0444), 0);
 
-    Inode *dir = get_inode_by_pathbuf(mk_path("/dir"));
-    Inode *a = get_inode_by_pathbuf(mk_path("/dir/a"));
+    Inode *dir = get_inode_by_pathbuf(parse_path_safe("/dir"));
+    Inode *a = get_inode_by_pathbuf(parse_path_safe("/dir/a"));
 
     struct timespec dirtime[2] = { { .tv_sec = 3232 }, { .tv_sec = 11111 }};
     struct timespec atime[2] = { { .tv_sec = 1212 }, { .tv_sec = 9999 }};
@@ -219,7 +213,7 @@ START_TEST(check_rmdir) {
 }
 END_TEST
 
-Suite *suite(void) {
+Suite *fs_suite(void) {
     Suite *s = suite_create("fs");
 
     TCase *tc = tcase_create("core");
@@ -237,16 +231,4 @@ Suite *suite(void) {
     suite_add_tcase(s, tc);
 
     return s;
-}
-
-int main(void) {
-    int number_failed;
-    Suite *s;
-    SRunner *sr = srunner_create(suite());
-
-    srunner_run_all(sr, CK_NORMAL);
-    number_failed = srunner_ntests_failed(sr);
-    srunner_free(sr);
-
-    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

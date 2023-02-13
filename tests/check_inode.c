@@ -8,12 +8,6 @@
 
 #include "../src/inode.h"
 
-PathBuf *mk_path(const char *path) {
-    PathBuf *res = malloc(sizeof(PathBuf));
-    parse_path(path, res);
-    return res;
-}
-
 START_TEST(check_get_inode_by_path) {
     inode_init();
 
@@ -30,20 +24,20 @@ START_TEST(check_get_inode_by_path) {
     add_entry(b, "d", d->number);
     add_entry(a, "file", file->number);
 
-    ck_assert_ptr_eq(root, get_inode_by_pathbuf(mk_path("/")));
-    ck_assert_ptr_eq(a, get_inode_by_pathbuf(mk_path("/a")));
-    ck_assert_ptr_eq(b, get_inode_by_pathbuf(mk_path("/a/b")));
-    ck_assert_ptr_eq(c, get_inode_by_pathbuf(mk_path("/a/b/c")));
-    ck_assert_ptr_eq(d, get_inode_by_pathbuf(mk_path("/a/b/d")));
+    ck_assert_ptr_eq(root, get_inode_by_pathbuf(parse_path_safe("/")));
+    ck_assert_ptr_eq(a, get_inode_by_pathbuf(parse_path_safe("/a")));
+    ck_assert_ptr_eq(b, get_inode_by_pathbuf(parse_path_safe("/a/b")));
+    ck_assert_ptr_eq(c, get_inode_by_pathbuf(parse_path_safe("/a/b/c")));
+    ck_assert_ptr_eq(d, get_inode_by_pathbuf(parse_path_safe("/a/b/d")));
 
     // No child found -> ENOENT
     errno = 0;
-    ck_assert_ptr_null(get_inode_by_pathbuf(mk_path("/a/b/c/d/e")));
+    ck_assert_ptr_null(get_inode_by_pathbuf(parse_path_safe("/a/b/c/d/e")));
     ck_assert_int_eq(ENOENT, errno);
 
     // Fragment is not a directory -> ENOTDIR
     errno = 0;
-    ck_assert_ptr_null(get_inode_by_pathbuf(mk_path("/a/file/whatever")));
+    ck_assert_ptr_null(get_inode_by_pathbuf(parse_path_safe("/a/file/whatever")));
     ck_assert_int_eq(ENOTDIR, errno);
 }
 END_TEST
@@ -176,7 +170,7 @@ START_TEST(check_get_inode) {
 }
 END_TEST
 
-Suite *suite(void) {
+Suite *inode_suite(void) {
     Suite *s = suite_create("inode");
 
     TCase *tc = tcase_create("core");
@@ -191,16 +185,4 @@ Suite *suite(void) {
     suite_add_tcase(s, tc);
 
     return s;
-}
-
-int main(void) {
-    int number_failed;
-    Suite *s;
-    SRunner *sr = srunner_create(suite());
-
-    srunner_run_all(sr, CK_NORMAL);
-    number_failed = srunner_ntests_failed(sr);
-    srunner_free(sr);
-
-    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

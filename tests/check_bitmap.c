@@ -66,7 +66,7 @@ START_TEST(bm_get_returns_correct_value) {
 }
 END_TEST
 
-Suite *bitmap_suite(void) {
+Suite *bitmap_suite(Suite *suite) {
     Suite *s = suite_create("bitmap");
 
     TCase *tc = tcase_create("core");
@@ -78,16 +78,4 @@ Suite *bitmap_suite(void) {
     suite_add_tcase(s, tc);
 
     return s;
-}
-
-int main(void) {
-    int number_failed;
-    Suite *s;
-    SRunner *sr = srunner_create(bitmap_suite());
-
-    srunner_run_all(sr, CK_NORMAL);
-    number_failed = srunner_ntests_failed(sr);
-    srunner_free(sr);
-
-    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -1,3 +1,15 @@
+#ifndef _COOLFS_BLOCK_ALLOCATOR_H_
+#define _COOLFS_BLOCK_ALLOCATOR_H_
+
+#include "block.h"
+
+void block_allocator_init(size_t block_size, size_t capacity);
+void block_allocator_destroy();
+
+Block *new_block();
+
+#endif /* _COOLFS_BLOCK_ALLOCATOR_H_ */
+
 // #ifndef _STORAGE_H_
 // #define _STORAGE_H_
 

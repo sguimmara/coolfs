@@ -5,6 +5,12 @@
 
 static char *PATH_SEP = "/";
 
+PathBuf *parse_path_safe(const char *path) {
+    PathBuf *res = malloc(sizeof(PathBuf));
+    parse_path(path, res);
+    return res;
+}
+
 int parse_path(const char *buf, PathBuf *result) {
     size_t len = strlen(buf);
 

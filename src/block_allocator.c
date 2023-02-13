@@ -1,3 +1,9 @@
+#include "block.h"
+#include "block_allocator.h"
+#include "bitmap.h"
+#include "errno.h"
+#include <stdlib.h>
+
 // #include <stdlib.h>
 // #include <string.h>
 // #include <stdint.h>
@@ -200,3 +206,32 @@
 
 //     return NULL;
 // }
+
+size_t block_size;
+size_t capacity;
+bitmap *block_usage;
+
+void block_allocator_init(size_t blck_size, size_t cap) {
+    block_size = blck_size;
+    capacity = cap;
+    block_usage = bm_alloc(cap);
+}
+
+Block *new_block() {
+    size_t blno;
+    if (bm_get(block_usage, &blno) != 0) {
+        errno = ENOSPC;
+        return NULL;
+    }
+
+    Block *result = malloc(sizeof(Block));
+    result->no = (blno_t)blno;
+    result->size = 0;
+    result->content = malloc(block_size);
+
+    return result;
+}
+
+void block_allocator_destroy() {
+    bm_free(block_usage);
+}
