@@ -2,6 +2,8 @@ AC_INIT([coolfs], [0.1], [])
 AM_INIT_AUTOMAKE([subdir-objects foreign -Wall -Werror dist-bzip2 ])
 
 AC_PROG_CC
+AM_PROG_AR
+LT_INIT
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])

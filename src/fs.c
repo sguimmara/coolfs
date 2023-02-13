@@ -20,7 +20,7 @@ Inode *resolve(const char *path) {
     PathBuf pb;
     parse_path(path, &pb);
 
-    Inode *inode = get_inode_by_path(&pb);
+    Inode *inode = get_inode_by_pathbuf(&pb);
 
     if (inode) {
         log_debug("[%s] %s -> inode %lu", __FUNCTION__, path, inode->number);
@@ -76,7 +76,7 @@ int _rmdir(const char *path) {
     Inode *inode;
     Inode *parent;
 
-    if (get_inode_and_parent_by_path(&pb, &inode, &parent) != 0) {
+    if (get_inode_and_parent_by_pathbuf(&pb, &inode, &parent) != 0) {
         return -1;
     }
 
@@ -106,7 +106,7 @@ int _unlink(const char *path) {
     Inode *inode;
     Inode *parent;
 
-    if (get_inode_and_parent_by_path(&pb, &inode, &parent) != 0) {
+    if (get_inode_and_parent_by_pathbuf(&pb, &inode, &parent) != 0) {
         return -errno;
     }
 
@@ -133,7 +133,7 @@ int _access(const char *path, int mode) {
     }
 
     // TODO implement proper access() logic (see access(2))
-    return -ENODEV;
+    return 0;
 }
 
 struct stat *get_stat(const Inode *inode) {
@@ -145,12 +145,12 @@ struct stat *get_stat(const Inode *inode) {
 int _create(const char *path, mode_t mode) {
     PathBuf pb;
     parse_path(path, &pb);
-    const char *base = basename(&pb);
+    const char *name = basename(&pb);
     pb.count--;
 
-    log_debug("[%s] %s (%o) (basename: %s)", __FUNCTION__, path, mode, base);
+    log_debug("[%s] %s (%o) (basename: %s)", __FUNCTION__, path, mode, name);
 
-    Inode *parent = get_inode_by_path(&pb);
+    Inode *parent = get_inode_by_pathbuf(&pb);
 
     if (!parent) {
         log_debug("[%s] %s parent: %p", __FUNCTION__, path, parent);
@@ -161,18 +161,13 @@ int _create(const char *path, mode_t mode) {
         return -ENOTDIR;
     }
 
-    if (S_ISDIR(mode) == 1) {
-        Inode *dir = create_directory(parent);
-        add_entry(parent, base, dir->number);
-        return 0;
-    } else if (S_ISREG(mode) == 1) {
-        Inode *f = create_file(parent);
-        add_entry(parent, base, f->number);
-        return 0;
-    }
+    Inode *new_inode = create_file(parent);
+    add_entry(parent, name, new_inode->number);
+    new_inode->gid = parent->gid;
+    new_inode->uid = parent->uid;
+    new_inode->mode = S_IFREG | mode;
 
-    log_error("[%s] -> not implemented: mode %o", mode);
-    return -1;
+    return 0;
 }
 
 int _readdir(const char *path, void *buf, fuse_fill_dir_t filler,
@@ -184,7 +179,7 @@ int _readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     Inode *inode;
     Inode *parent;
 
-    if (get_inode_and_parent_by_path(&pb, &inode, &parent) != 0) {
+    if (get_inode_and_parent_by_pathbuf(&pb, &inode, &parent) != 0) {
         return -errno;
     }
 
@@ -211,6 +206,70 @@ int _readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         filler(buf, ent.name, st, 0);
         free(st);
     }
+
+    return 0;
+}
+
+int _rename(const char *src, const char *dst) {
+    PathBuf pb;
+    parse_path(src, &pb);
+
+    Inode *inode;
+    Inode *parent;
+
+    if (get_inode_and_parent_by_pathbuf(&pb, &inode, &parent) != 0) {
+        return -errno;
+    }
+
+    parse_path(dst, &pb);
+    const char *new_name = basename(&pb);
+
+    pb.count--;
+    Inode *new_parent = get_inode_by_pathbuf(&pb);
+
+    if (!new_parent) {
+        return -errno;
+    }
+
+    remove_entry(parent, inode->number);
+    add_entry(new_parent, new_name, inode->number);
+
+    return 0;
+}
+
+int _mkdir(const char *path, mode_t mode) {
+    PathBuf pb;
+    parse_path(path, &pb);
+
+    const char *name = basename(&pb);
+    pb.count--;
+    Inode *parent = get_inode_by_pathbuf(&pb);
+
+    if (!parent) {
+        return -errno;
+    }
+
+    Inode *inode = create_directory(parent);
+    inode->mode = S_IFDIR | mode;
+    inode->gid = parent->gid;
+    inode->uid = parent->uid;
+    add_entry(parent, name, inode->number);
+
+    return 0;
+}
+
+int _utimens(const char *path, const struct timespec tv[2]) {
+    PathBuf pb;
+    parse_path(path, &pb);
+    Inode *inode = get_inode_by_pathbuf(&pb);
+
+    if (!inode) {
+        return -errno;
+    }
+
+    // TODO implement nanosecond timestamps
+    inode->atime = tv[0].tv_sec;
+    inode->mtime = tv[1].tv_sec;
 
     return 0;
 }

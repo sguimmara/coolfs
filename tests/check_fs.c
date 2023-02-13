@@ -9,6 +9,12 @@
 #include "../src/fs.h"
 #include "../src/inode.h"
 
+PathBuf *mk_path(const char *path) {
+    PathBuf *res = malloc(sizeof(PathBuf));
+    parse_path(path, res);
+    return res;
+}
+
 START_TEST(check_getattr) {
     fs_init();
 
@@ -82,17 +88,94 @@ START_TEST(check_unlink) {
     ino_t dirno = dir->number;
     ino_t fileno = file->number;
 
-    ck_assert_int_eq(_unlink("/"), -1);
-    ck_assert_int_eq(errno, EISDIR);
+    ck_assert_int_eq(_unlink("/"), -EISDIR);
 
-    ck_assert_int_eq(_unlink("/dir"), -1);
-    ck_assert_int_eq(errno, EISDIR);
+    ck_assert_int_eq(_unlink("/dir"), -EISDIR);
 
     ck_assert_int_eq(get_root()->data.dir.entry_count, 2);
     ck_assert_int_eq(_unlink("/file"), 0);
     ck_assert_int_eq(get_root()->data.dir.entry_count, 1);
 
     ck_assert_ptr_null(get_inode(fileno));
+}
+END_TEST
+
+START_TEST(check_create) {
+    fs_init();
+
+    ck_assert_int_eq(_create("/file0", 0500), 0);
+    ck_assert_int_eq(_mkdir("/dir", 0444), 0);
+    ck_assert_int_eq(_mkdir("/dir/subdir", 0444), 0);
+    ck_assert_int_eq(_create("/dir/file1", 0555), 0);
+    ck_assert_int_eq(_create("/dir/subdir/file2", 0777), 0);
+
+    Inode *file0 = get_inode_by_pathbuf(mk_path("/file0"));
+    ck_assert_ptr_nonnull(file0);
+    ck_assert_int_eq(file0->mode, S_IFREG | 0500);
+
+    Inode *file1 = get_inode_by_pathbuf(mk_path("/dir/file1"));
+    ck_assert_ptr_nonnull(file1);
+    ck_assert_int_eq(file1->mode, S_IFREG | 0555);
+
+    Inode *file2 = get_inode_by_pathbuf(mk_path("/dir/subdir/file2"));
+    ck_assert_ptr_nonnull(file2);
+    ck_assert_int_eq(file2->mode, S_IFREG | 0777);
+}
+END_TEST
+
+START_TEST(check_rename) {
+    fs_init();
+
+    _create("/src", S_IFDIR | 0444);
+
+    Inode *inode = get_inode_by_pathbuf(mk_path("/src"));
+
+    ck_assert_int_eq(_rename("/foo", "/dst"), -ENOENT);
+    ck_assert_int_eq(_rename("/src", "/dst"), 0);
+
+    ck_assert_ptr_null(get_inode_by_pathbuf(mk_path("/src")));
+    ck_assert_ptr_eq(get_inode_by_pathbuf(mk_path("/dst")), inode);
+}
+END_TEST
+
+START_TEST(check_mkdir) {
+    fs_init();
+
+    ck_assert_int_eq(_mkdir("/dir", 0555), 0);
+    ck_assert_int_eq(_mkdir("/dir/a", 0444), 0);
+    ck_assert_int_eq(_mkdir("/dir/a/b", 0777), 0);
+
+    ck_assert_int_eq(_mkdir("/dir/X/b", 0777), -ENOENT);
+
+    Inode *dir = get_inode_by_pathbuf(mk_path("/dir"));
+    Inode *a = get_inode_by_pathbuf(mk_path("/dir/a"));
+    Inode *b = get_inode_by_pathbuf(mk_path("/dir/a/b"));
+
+    ck_assert_int_eq(dir->mode, S_IFDIR | 0555);
+    ck_assert_int_eq(a->mode, S_IFDIR | 0444);
+    ck_assert_int_eq(b->mode, S_IFDIR | 0777);
+}
+END_TEST
+
+START_TEST(check_utimens) {
+    fs_init();
+
+    ck_assert_int_eq(_mkdir("/dir", 0555), 0);
+    ck_assert_int_eq(_create("/dir/a", 0444), 0);
+
+    Inode *dir = get_inode_by_pathbuf(mk_path("/dir"));
+    Inode *a = get_inode_by_pathbuf(mk_path("/dir/a"));
+
+    struct timespec dirtime[2] = { { .tv_sec = 3232 }, { .tv_sec = 11111 }};
+    struct timespec atime[2] = { { .tv_sec = 1212 }, { .tv_sec = 9999 }};
+    ck_assert_int_eq(_utimens("/dir", dirtime), 0);
+    ck_assert_int_eq(_utimens("/dir/a", atime), 0);
+    ck_assert_int_eq(_utimens("/noexists", atime), -ENOENT);
+
+    ck_assert_int_eq(dir->atime, 3232);
+    ck_assert_int_eq(dir->mtime, 11111);
+    ck_assert_int_eq(a->atime, 1212);
+    ck_assert_int_eq(a->mtime, 9999);
 }
 END_TEST
 
@@ -116,14 +199,11 @@ START_TEST(check_rmdir) {
     ino_t subdirno = subdir->number;
     ino_t fileno = file->number;
 
-    ck_assert_int_eq(_rmdir("/"), -1);
-    ck_assert_int_eq(errno, EACCES);
+    ck_assert_int_eq(_rmdir("/"), -EACCES);
 
-    ck_assert_int_eq(_rmdir("/dir"), -1);
-    ck_assert_int_eq(errno, ENOTEMPTY);
+    ck_assert_int_eq(_rmdir("/dir"), -ENOTEMPTY);
 
-    ck_assert_int_eq(_rmdir("/file"), -1);
-    ck_assert_int_eq(errno, ENOTDIR);
+    ck_assert_int_eq(_rmdir("/file"), -ENOTDIR);
 
     ck_assert_int_eq(_rmdir("/dir/subdir"), 0);
     ck_assert_int_eq(dir->data.dir.entry_count, 0);
@@ -149,6 +229,10 @@ Suite *suite(void) {
         tcase_add_test(tc, check_chmod);
         tcase_add_test(tc, check_rmdir);
         tcase_add_test(tc, check_unlink);
+        tcase_add_test(tc, check_create);
+        tcase_add_test(tc, check_rename);
+        tcase_add_test(tc, check_mkdir);
+        tcase_add_test(tc, check_utimens);
     }
     suite_add_tcase(s, tc);
 

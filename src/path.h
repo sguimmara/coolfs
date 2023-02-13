@@ -15,7 +15,7 @@ typedef struct PathBuf {
  * @brief Parses the path into a PathBuf struct.
  * If the path is the root directory ("/"), the result has a
  * fragment count of zero, and the function returns 0.
- * 
+ *
  * @param [in] buf The path to parse.
  * @param [out] result The resulting PathBuf.
  * @return int The status.
@@ -24,14 +24,14 @@ int parse_path(const char *buf, PathBuf *result);
 
 /**
  * @brief Returns the parent directory of the path.
- * 
- * @return char* 
+ *
+ * @return char*
  */
 char *parent(const PathBuf* path);
 
 /**
  * @brief Returns the base name of the path.
- * 
+ *
  */
 char *basename(const PathBuf *path);
 

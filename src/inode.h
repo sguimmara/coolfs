@@ -77,9 +77,9 @@ void remove_inode(const ino_t ino);
  * @return Inode* The inode if found, otherwise NULL, and sets errno with the
  * appropriate error code.
  */
-Inode* get_inode_by_path(const PathBuf *path);
+Inode* get_inode_by_pathbuf(const PathBuf *path);
 
-int get_inode_and_parent_by_path(const PathBuf *path,
+int get_inode_and_parent_by_pathbuf(const PathBuf *path,
                                  Inode **inode, Inode** parent);
 
 /**

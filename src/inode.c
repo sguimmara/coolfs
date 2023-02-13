@@ -185,7 +185,7 @@ Inode *get_inode(ino_t ino) {
     return inodes[ino];
 }
 
-int get_inode_and_parent_by_path(const PathBuf *path,
+int get_inode_and_parent_by_pathbuf(const PathBuf *path,
                                  Inode **inode, Inode** parent) {
     log_trace("locate...");
     if (path->count == 0) {
@@ -207,29 +207,40 @@ int get_inode_and_parent_by_path(const PathBuf *path,
             return -1;
         }
         if (current->data.dir.entry_count > 0) {
+            int found = 0;
             for (size_t i = 0; i < current->data.dir.entry_count; i++) {
                 if (strcmp(current->data.dir.entries[i].name, fragment) == 0) {
+                    log_trace("%s found", fragment);
                     prnt = current;
                     current = get_inode(current->data.dir.entries[i].inode);
+                    found = 1;
                     break;
                 }
             }
+
+            if (!found) {
+                errno = ENOENT;
+                log_trace("fragment %s not found", fragment);
+                return -1;
+            }
         } else {
             errno = ENOENT;
+            log_trace("fragment %s not found", fragment);
             return -1;
         }
     }
 
+    log_trace("fragment %s found", path->fragments[path->count - 1]);
     *inode = current;
     *parent = prnt;
     return 0;
 }
 
-Inode* get_inode_by_path(const PathBuf *path) {
+Inode* get_inode_by_pathbuf(const PathBuf *path) {
     Inode *result;
     Inode *parent;
 
-    int ret = get_inode_and_parent_by_path(path, &result, &parent);
+    int ret = get_inode_and_parent_by_pathbuf(path, &result, &parent);
 
     if (ret != 0) {
         return NULL;

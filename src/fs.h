@@ -3,6 +3,7 @@
 #ifndef _COOL_FS_H_
 #define _COOL_FS_H_
 
+#include <time.h>
 #include <sys/stat.h>
 
 typedef int (*fuse_fill_dir_t) (void *buf, const char *name,
@@ -25,5 +26,11 @@ int _access(const char *path, int mode);
 int _create(const char *path, mode_t mode);
 
 int _readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset);
+
+int _rename(const char *src, const char *dst);
+
+int _mkdir(const char *path, mode_t mode);
+
+int _utimens(const char *path, const struct timespec tv[2]);
 
 #endif /* _COOL_FS_H_ */

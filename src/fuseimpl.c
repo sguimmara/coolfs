@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "log/log.h"
 
@@ -77,6 +78,17 @@ int fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
     return checked(__FUNCTION__, path, _create(path, mode));
 }
 
+int fuse_rename(const char *src, const char *dst) {
+    return checked(__FUNCTION__, src, _rename(src, dst));
+}
+
+int fuse_mkdir(const char *path, mode_t mode) {
+    return checked(__FUNCTION__, path, _mkdir(path, mode));
+}
+
+int fuse_utimens(const char *path, const struct timespec tv[2]) {
+    return checked(__FUNCTION__, path, _utimens(path, tv));
+}
 // static char *PATH_SEP = "/";
 
 // char MAGIC[6] = {'C', 'O', 'O', 'L', 'F', 'S'};

@@ -30,20 +30,20 @@ START_TEST(check_get_inode_by_path) {
     add_entry(b, "d", d->number);
     add_entry(a, "file", file->number);
 
-    ck_assert_ptr_eq(root, get_inode_by_path(mk_path("/")));
-    ck_assert_ptr_eq(a, get_inode_by_path(mk_path("/a")));
-    ck_assert_ptr_eq(b, get_inode_by_path(mk_path("/a/b")));
-    ck_assert_ptr_eq(c, get_inode_by_path(mk_path("/a/b/c")));
-    ck_assert_ptr_eq(d, get_inode_by_path(mk_path("/a/b/d")));
+    ck_assert_ptr_eq(root, get_inode_by_pathbuf(mk_path("/")));
+    ck_assert_ptr_eq(a, get_inode_by_pathbuf(mk_path("/a")));
+    ck_assert_ptr_eq(b, get_inode_by_pathbuf(mk_path("/a/b")));
+    ck_assert_ptr_eq(c, get_inode_by_pathbuf(mk_path("/a/b/c")));
+    ck_assert_ptr_eq(d, get_inode_by_pathbuf(mk_path("/a/b/d")));
 
     // No child found -> ENOENT
     errno = 0;
-    ck_assert_ptr_null(get_inode_by_path(mk_path("/a/b/c/d/e")));
+    ck_assert_ptr_null(get_inode_by_pathbuf(mk_path("/a/b/c/d/e")));
     ck_assert_int_eq(ENOENT, errno);
 
     // Fragment is not a directory -> ENOTDIR
     errno = 0;
-    ck_assert_ptr_null(get_inode_by_path(mk_path("/a/file/whatever")));
+    ck_assert_ptr_null(get_inode_by_pathbuf(mk_path("/a/file/whatever")));
     ck_assert_int_eq(ENOTDIR, errno);
 }
 END_TEST

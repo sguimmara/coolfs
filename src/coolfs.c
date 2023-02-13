@@ -113,6 +113,9 @@ static const struct fuse_operations operations = {
     .unlink = fuse_unlink,
     .rmdir = fuse_rmdir,
     .create = fuse_create,
+
+    .rename = fuse_rename,
+    .mkdir = fuse_mkdir,
 };
 
 int main(int argc, char *argv[]) {
@@ -135,27 +138,18 @@ int main(int argc, char *argv[]) {
         args.argv[0][0] = '\0';
     }
 
-    if (options.verbose) {
+    if (options.set_trace) {
+        log_set_level(LOG_DEBUG);
+    } else if (options.verbose) {
         log_set_level(LOG_DEBUG);
     } else {
         log_set_level(LOG_INFO);
     }
 
-    if (options.set_trace) {
-        log_set_level(LOG_DEBUG);
-    }
-
-    // FILE *storage = fopen("cool.disk", "wb");
-    // // cl_mkfs(storage);
-    // cl_init_storage(storage);
-
     ret = fuse_main(args.argc, args.argv, &operations, NULL);
 
     fuse_opt_free_args(&args);
 
-    // TODO dispose FS
-    // cl_storage_dispose();
-    // fclose(storage);
     log_info("exiting");
 
     return ret;
