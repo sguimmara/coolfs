@@ -17,13 +17,13 @@ Block *new_block();
 Block *get_block(blno_t no);
 void release_block(blno_t no);
 
-blno_t * allocate_blocks(const size_t bufsize, size_t *block_count);
+blno_t *allocate_blocks(const size_t bufsize, size_t *block_count);
 
-void write_into_blocks(const char *buf, size_t bufsize,
-                       blno_t* blocks, size_t block_count);
+void write_into_blocks(const char *buf, size_t bufsize, blno_t *blocks,
+                       size_t block_count, size_t offset);
 
-void read_from_blocks(char *dst, size_t bufsize,
-                      blno_t* blocks, size_t block_count);
+void read_from_blocks(char *dst, size_t bufsize, blno_t *blocks,
+                      size_t block_count);
 
 DiskUsage get_stats();
 

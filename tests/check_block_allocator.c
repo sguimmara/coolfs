@@ -15,7 +15,7 @@ START_TEST(check_read_from_blocks) {
     size_t count;
     blno_t *blck_nums = allocate_blocks(size, &count);
 
-    write_into_blocks(data, size, blck_nums, count);
+    write_into_blocks(data, size, blck_nums, count, 0);
 
     char *dst = malloc(128);
 
@@ -30,7 +30,7 @@ START_TEST(check_read_from_blocks) {
 END_TEST
 
 START_TEST(check_write_into_blocks) {
-    const char *data = "AAAABBBBCCCCDD";
+    const char *data = "aaaabbbbccccdd";
     size_t size = strlen(data);
     size_t block_size = 4;
 
@@ -41,7 +41,7 @@ START_TEST(check_write_into_blocks) {
 
     ck_assert_int_eq(count, 4);
 
-    write_into_blocks(data, size, blck_nums, count);
+    write_into_blocks(data, size, blck_nums, count, 0);
 
     Block *b0 = get_block(blck_nums[0]);
     Block *b1 = get_block(blck_nums[1]);
@@ -53,10 +53,31 @@ START_TEST(check_write_into_blocks) {
     ck_assert_int_eq(b2->size, block_size);
     ck_assert_int_eq(b3->size, 2);
 
-    ck_assert_int_eq(memcmp("AAAA", b0->content, block_size), 0);
-    ck_assert_int_eq(memcmp("BBBB", b1->content, block_size), 0);
-    ck_assert_int_eq(memcmp("CCCC", b2->content, block_size), 0);
-    ck_assert_int_eq(memcmp("DD", b3->content, 2), 0);
+    ck_assert_int_eq(memcmp("aaaa", b0->content, block_size), 0);
+    ck_assert_int_eq(memcmp("bbbb", b1->content, block_size), 0);
+    ck_assert_int_eq(memcmp("cccc", b2->content, block_size), 0);
+    ck_assert_int_eq(memcmp("dd", b3->content, 2), 0);
+
+    write_into_blocks("FOO", 3, blck_nums, count, 4);
+
+    ck_assert_int_eq(memcmp("aaaa", b0->content, block_size), 0);
+    ck_assert_int_eq(memcmp("FOOb", b1->content, block_size), 0);
+    ck_assert_int_eq(memcmp("cccc", b2->content, block_size), 0);
+    ck_assert_int_eq(memcmp("dd", b3->content, 2), 0);
+
+    write_into_blocks("!!", 2, blck_nums, count, 9);
+
+    ck_assert_int_eq(memcmp("aaaa", b0->content, block_size), 0);
+    ck_assert_int_eq(memcmp("FOOb", b1->content, block_size), 0);
+    ck_assert_int_eq(memcmp("c!!c", b2->content, block_size), 0);
+    ck_assert_int_eq(memcmp("dd", b3->content, 2), 0);
+
+    write_into_blocks("?", 1, blck_nums, count, 13);
+
+    ck_assert_int_eq(memcmp("aaaa", b0->content, block_size), 0);
+    ck_assert_int_eq(memcmp("FOOb", b1->content, block_size), 0);
+    ck_assert_int_eq(memcmp("c!!c", b2->content, block_size), 0);
+    ck_assert_int_eq(memcmp("d?", b3->content, 2), 0);
 
     block_allocator_destroy();
 }
