@@ -122,3 +122,5 @@ Makefile
 
 bincheck*
 /config.h
+
+libtool
