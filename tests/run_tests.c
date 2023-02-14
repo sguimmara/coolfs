@@ -1,10 +1,12 @@
 #include <stdlib.h>
 #include <check.h>
 #include "check_all.h"
+#include "../src/log/log.h"
 
 int main(void) {
     int number_failed;
     Suite *s;
+    log_set_quiet(true);
     SRunner *sr = srunner_create(block_allocator_suite());
     srunner_add_suite(sr, bitmap_suite());
     srunner_add_suite(sr, fs_suite());

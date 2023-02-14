@@ -4,7 +4,7 @@
 #include "../src/bitmap.h"
 
 START_TEST(bm_alloc_creates_correct_size) {
-    size_t size = 19199191;
+    size_t size = 1919919;
     bitmap *bm = bm_alloc(size);
 
     ck_assert_int_eq(bm->bits, size);

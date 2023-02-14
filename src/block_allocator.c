@@ -1,220 +1,54 @@
-#include "block.h"
 #include "block_allocator.h"
 #include "bitmap.h"
+#include "block.h"
 #include "errno.h"
+#include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
-
-// #include <stdlib.h>
-// #include <string.h>
-// #include <stdint.h>
-// #include <sys/stat.h>
-// #include <sys/types.h>
-
-// #include "log/log.h"
-
-// #include "bitmap.h"
-// #include "block_allocator.h"
-// #include "constants.h"
-// #include "inode.h"
-
-// static block **blocks;
-// static size_t allocated_blocks;
-// static int should_sort;
-// bitmap *blk_bitmap;
-// FILE *disk;
-// size_t total_storage;
-// size_t used_storage;
-
-// block *cl_new_block(const char *data, const size_t size) {
-//     if (size > BLOCK_SIZE) {
-//         return NULL;
-//     }
-
-//     size_t no;
-//     if (bm_get(blk_bitmap, &no) != 0) {
-//         log_error("could not allocate block: no empty block free.");
-//         return NULL;
-//     }
-
-//     block *blk = malloc(sizeof(block));
-//     blk->no = no;
-//     blk->size = size;
-
-//     log_info("[block] creating block %lu", blk->no);
-
-//     char *content = malloc(size);
-//     memcpy(content, data, size);
-//     blk->content = content;
-
-//     used_storage += BLOCK_SIZE;
-
-//     log_debug("usage: %u / %u B", used_storage, total_storage);
-
-//     return blk;
-// }
-
-// void cl_storage_dispose() {
-//     for (size_t i = 0; i < allocated_blocks; i++) {
-//         free(blocks[i]->content);
-//         free(blocks[i]);
-//     }
-// }
-
-// void cl_init_storage(FILE *file) {
-//     disk = file;
-//     allocated_blocks = 0;
-//     log_debug("cl_init_storage: allocating %u blocks", MAX_BLOCKS);
-//     blk_bitmap = bm_alloc(1024);
-//     total_storage = BLOCK_SIZE * MAX_BLOCKS;
-//     blocks = NULL;
-//     should_sort = 0;
-// }
-
-// static int cl_compare_blocks(const void *a, const void *b) {
-//     const block *ba = (const block *)a;
-//     const block *bb = (const block *)b;
-//     if (ba->no > bb->no) {
-//         return 1;
-//     }
-
-//     return -1;
-// }
-
-// void cl_free_block(size_t no) {
-//     if (no == SIZE_MAX) {
-//         return;
-//     }
-//     bm_unset(blk_bitmap, no);
-//     free(blocks[no]);
-//     log_debug("freeing block %lu", no);
-// }
-
-// void cl_sort_blocks() {
-//     if (allocated_blocks == 0) {
-//         return;
-//     }
-
-//     qsort(blocks, allocated_blocks, sizeof(block *), cl_compare_blocks);
-// }
-
-// int cl_write_storage(const char *data, const size_t size, cool_inode *inode) {
-//     size_t count = size / BLOCK_SIZE;
-
-//     if (size % BLOCK_SIZE != 0) {
-//         count++;
-//     }
-
-//     if (count > 10) {
-//         log_error("too many blocks");
-//         return -1;
-//     }
-
-//     log_debug("[block] writing %lu bytes into %lu blocks of size %lu",
-//               size, count, BLOCK_SIZE);
-
-//     void *offset = (void *)data;
-//     size_t remaining = size;
-
-//     size_t *result = malloc(sizeof(size_t) * count);
-
-//     for (size_t i = 0; i < count; i++) {
-//         size_t block_size = remaining > BLOCK_SIZE ? BLOCK_SIZE : remaining;
-//         block *blk = cl_new_block(offset, block_size);
-
-//         if (blk == NULL) {
-//             log_error("[block] failed to allocate block.");
-//             return -1;
-//         }
-//         cl_write_block(blk);
-//         result[i] = blk->no;
-//         log_debug("[block] writing %u on block %u", block_size, blk->no);
-//         offset += BLOCK_SIZE;
-//         remaining -= BLOCK_SIZE;
-//         inode->first_blocks[i] = blk->no;
-//     }
-
-//     inode->st->st_size = size;
-//     inode->st->st_blksize = BLOCK_SIZE;
-//     log_info("[block] total size: %lu bytes", inode->st->st_size);
-
-//     memcpy(inode->first_blocks, result, count);
-
-//     return 0;
-// }
-
-// int cl_read_storage(char *buf, size_t size, size_t *blks) {
-//     void *offset = buf;
-
-//     size_t block_count = size / BLOCK_SIZE;
-
-
-//     if (size % BLOCK_SIZE != 0) {
-//         block_count++;
-//     }
-
-//     log_debug("[block] %lu blocks to read", block_count);
-
-//     for (size_t i = 0; i < block_count; i++) {
-//         if (blks[i] == SIZE_MAX) {
-//             log_error("[block] trying to read a non allocated block");
-//             return -1;
-//         }
-//         size_t no = blks[i];
-//         block *blk = cl_get_block(no);
-
-//         if (blk == NULL) {
-//             log_error("[block] could not get block %u", no);
-//             return -1;
-//         }
-
-//         memcpy(offset, blk->content, blk->size);
-//         log_debug("[block] read %lu bytes successfully", size);
-//         offset += blk->size;
-//     }
-
-//     return 0;
-// }
-
-// void cl_write_block(block *blk) {
-//     ++allocated_blocks;
-//     size_t new_size = allocated_blocks * sizeof(block *);
-//     if (allocated_blocks == 0) {
-//         blocks = malloc(new_size);
-//     } else {
-//         blocks = realloc(blocks, new_size);
-//     }
-//     blocks[allocated_blocks - 1] = blk;
-//     should_sort = 1;
-// }
-
-// block *cl_get_block(size_t no) {
-//     if (allocated_blocks == 0) {
-//         log_error("[block] there are zero blocks allocated");
-//         return NULL;
-//     }
-
-//     if (should_sort) {
-//         cl_sort_blocks();
-//     }
-
-//     for (size_t i = 0; i < allocated_blocks; i++) {
-//         block *blk = blocks[i];
-//         if (blk->no == no) {
-//             return blk;
-//         }
-//     }
-
-//     return NULL;
-// }
+#include <string.h>
+#include <sys/types.h>
 
 size_t block_size;
-size_t capacity;
+size_t total_capacity;
+size_t current_capacity;
 bitmap *block_usage;
+size_t block_count;
+Block **blocks;
 
 void block_allocator_init(size_t blck_size, size_t cap) {
-    block_size = blck_size;
-    capacity = cap;
     block_usage = bm_alloc(cap);
+    block_size = blck_size;
+    total_capacity = cap;
+    current_capacity = 0;
+    block_count = 0;
+    blocks = NULL;
+}
+
+void expand_block_array() {
+    if (current_capacity == 0) {
+        current_capacity = 1024;
+    } else {
+        current_capacity *= 2;
+    }
+    if (current_capacity > total_capacity) {
+        current_capacity = total_capacity;
+    }
+    blocks = realloc(blocks, current_capacity * sizeof(Block *));
+}
+
+void add_block(Block *block) {
+    // sanity check
+    assert(bm_is_set(block_usage, (size_t)block->no) == true);
+
+    if (current_capacity == 0 || block->no > (current_capacity - 1)) {
+        expand_block_array();
+    }
+
+    assert(blocks != NULL);
+
+    blocks[block->no] = block;
+
+    block_count++;
 }
 
 Block *new_block() {
@@ -229,9 +63,98 @@ Block *new_block() {
     result->size = 0;
     result->content = malloc(block_size);
 
+    add_block(result);
+
+    return result;
+}
+
+Block *get_block(blno_t no) {
+    assert(no < current_capacity);
+    assert(bm_is_set(block_usage, (size_t)no));
+
+    return blocks[(size_t)no];
+}
+
+void free_block(Block *block) { free(block->content); }
+
+void release_block(blno_t no) {
+    assert(bm_is_set(block_usage, (size_t)no));
+
+    Block *block = get_block(no);
+    bm_unset(block_usage, (size_t)no);
+    free_block(block);
+    blocks[no] = NULL;
+    block_count--;
+}
+
+/**
+ * @brief How many blocks to store BUFSIZE ?
+ */
+size_t count_blocks(size_t bufsize) {
+    return (bufsize / block_size) + (bufsize % block_size > 0 ? 1 : 0);
+}
+
+blno_t *allocate_blocks(size_t bufsize, size_t *blck_count) {
+    *blck_count = count_blocks(bufsize);
+
+    blno_t *res = malloc(*blck_count * sizeof(blno_t));
+
+    for (size_t i = 0; i < *blck_count; i++) {
+        Block *b = new_block();
+        if (b == NULL) {
+            free(res);
+            return NULL;
+        }
+        res[i] = b->no;
+    }
+
+    return res;
+}
+
+void write_into_blocks(const char *buf, size_t bufsize, blno_t *blocks,
+                       size_t block_count) {
+    off_t offset = 0;
+    size_t current_blck = 0;
+    size_t remaining = bufsize;
+    char *ptr = (char *)buf;
+
+    for (size_t i = 0; i < bufsize; i += block_size) {
+        blno_t blno = blocks[current_blck++];
+        Block *block = get_block(blno);
+        size_t size = remaining < block_size ? remaining : block_size;
+        block->size = size;
+        memcpy(block->content, ptr + i, size);
+        remaining -= block_size;
+    }
+}
+
+void read_from_blocks(char *dst, size_t bufsize, blno_t *blocks,
+                      size_t block_count) {
+    size_t offset = 0;
+    for (size_t i = 0; i < block_count; i++) {
+        Block *block = get_block(blocks[i]);
+        memcpy(dst + offset, block->content, block->size);
+        offset += block->size;
+    }
+}
+
+DiskUsage get_stats() {
+    DiskUsage result = {.allocated_blocks = block_count,
+                        .block_size = block_size,
+                        .total_capacity = total_capacity * block_size,
+                        .used_space = block_count * block_size};
+
     return result;
 }
 
 void block_allocator_destroy() {
+    for (size_t i = 0; i < current_capacity; i++) {
+        if (bm_is_set(block_usage, i)) {
+            free_block(blocks[i]);
+        }
+    }
+
+    free(blocks);
+
     bm_free(block_usage);
 }
