@@ -61,6 +61,7 @@ Block *new_block() {
     Block *result = malloc(sizeof(Block));
     result->no = (blno_t)blno;
     result->size = 0;
+    result->flags = BLCK_CHNG;
     result->content = malloc(block_size);
 
     add_block(result);

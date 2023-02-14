@@ -122,6 +122,7 @@ START_TEST(check_new_block) {
     block_allocator_init(128, 1);
 
     Block *block = new_block();
+    ck_assert_int_eq(block->flags, BLCK_CHNG);
     ck_assert_ptr_nonnull(block);
     ck_assert_int_eq(block->size, 0);
     ck_assert_int_eq(block->no, 0);
