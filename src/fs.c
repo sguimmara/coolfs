@@ -4,16 +4,26 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <string.h>
 
 #include "log/log.h"
 
 #include "fs.h"
 #include "path.h"
 #include "inode.h"
+#include "block_allocator.h"
+
+const size_t DEFAULT_BLOCK_SIZE = 4;
+const size_t DEFAULT_BLOCK_CAPACITY = 128;
 
 void fs_init() {
     inode_init();
+    block_allocator_init(DEFAULT_BLOCK_SIZE, DEFAULT_BLOCK_CAPACITY);
     create_filesystem_root();
+}
+
+void fs_destroy() {
+    block_allocator_destroy();
 }
 
 Inode *resolve(const char *path) {
@@ -270,6 +280,75 @@ int _utimens(const char *path, const struct timespec tv[2]) {
     // TODO implement nanosecond timestamps
     inode->atime = tv[0].tv_sec;
     inode->mtime = tv[1].tv_sec;
+
+    return 0;
+}
+
+int _write(const char *path, const char *buf, size_t size, off_t offset) {
+    PathBuf pb;
+    parse_path(path, &pb);
+    Inode *inode = get_inode_by_pathbuf(&pb);
+
+    if (!inode) {
+        return -errno;
+    }
+
+    if (S_ISDIR(inode->mode))  {
+        return -EISDIR;
+    }
+
+    if (!S_ISREG(inode->mode)) {
+        return -EINVAL;
+    }
+
+    if (inode->data.file.size < size) {
+        size_t block_count = 0;
+        // TODO free current blocks
+        blno_t *blocks = allocate_blocks(size, &block_count);
+        if (!blocks) {
+            return -ENOSPC;
+        }
+        inode->data.file.block_count = block_count;
+
+        for (size_t i = 0; i < block_count; i++) {
+            inode->data.file.blocks[i] = blocks[i];
+        }
+
+        // TODO check that we have less than 8 blocks
+
+        free(blocks);
+    }
+    write_into_blocks(buf, size, inode->data.file.blocks, inode->data.file.block_count, offset);
+
+    inode->data.file.size = size;
+
+    return 0;
+}
+
+int _read(const char *path, const char *buf, size_t size, off_t offset) {
+    PathBuf pb;
+    parse_path(path, &pb);
+    Inode *inode = get_inode_by_pathbuf(&pb);
+
+    if (!inode) {
+        return -errno;
+    }
+
+    if (S_ISDIR(inode->mode))  {
+        return -EISDIR;
+    }
+
+    if (!S_ISREG(inode->mode)) {
+        return -EINVAL;
+    }
+
+    FileInode file = inode->data.file;
+
+    if (size > file.size) {
+        return -EINVAL;
+    }
+
+    read_from_blocks(buf, size, file.blocks, file.block_count, offset);
 
     return 0;
 }

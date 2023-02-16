@@ -105,8 +105,8 @@ static const struct fuse_operations operations = {
     .readdir = fuse_readdir,
 
     .open = fuse_open,
-    // .read = fuse_read,
-    // .write = fuse_write,
+    .read = fuse_read,
+    .write = fuse_write,
 
     .chmod = fuse_chmod,
     .chown = fuse_chown,

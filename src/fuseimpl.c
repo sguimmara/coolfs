@@ -89,6 +89,16 @@ int fuse_mkdir(const char *path, mode_t mode) {
 int fuse_utimens(const char *path, const struct timespec tv[2]) {
     return checked(__FUNCTION__, path, _utimens(path, tv));
 }
+
+int fuse_write(const char *path, const char *buf, size_t size, off_t offset,
+               struct fuse_file_info *fi) {
+    return checked(__FUNCTION__, path, _write(path, buf, size, offset));
+}
+
+int fuse_read(const char *path, char *buf, size_t size, off_t offset,
+              struct fuse_file_info *fi) {
+    return checked(__FUNCTION__, path, _read(path, buf, size, offset));
+}
 // static char *PATH_SEP = "/";
 
 // char MAGIC[6] = {'C', 'O', 'O', 'L', 'F', 'S'};

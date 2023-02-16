@@ -151,6 +151,24 @@ START_TEST(check_mkdir) {
 }
 END_TEST
 
+START_TEST(check_write) {
+    fs_init();
+
+    ck_assert_int_eq(_create("/file", 0777), 0);
+
+    ck_assert_int_eq(_write("/file", "hello", 5, 0), 0);
+
+    char *buf = malloc(5);
+    ck_assert_int_eq(_read("/file", buf, 5, 0), 0);
+
+    ck_assert_mem_eq(buf, "hello", 5);
+
+    free(buf);
+
+    fs_destroy();
+}
+END_TEST
+
 START_TEST(check_utimens) {
     fs_init();
 
@@ -170,6 +188,8 @@ START_TEST(check_utimens) {
     ck_assert_int_eq(dir->mtime, 11111);
     ck_assert_int_eq(a->atime, 1212);
     ck_assert_int_eq(a->mtime, 9999);
+
+    fs_destroy();
 }
 END_TEST
 
@@ -210,6 +230,8 @@ START_TEST(check_rmdir) {
     ck_assert_ptr_null(get_inode(dirno));
     ck_assert_ptr_null(get_inode(subdirno));
     ck_assert_ptr_eq(get_inode(fileno), file);
+
+    fs_destroy();
 }
 END_TEST
 
@@ -227,6 +249,7 @@ Suite *fs_suite(void) {
         tcase_add_test(tc, check_rename);
         tcase_add_test(tc, check_mkdir);
         tcase_add_test(tc, check_utimens);
+        tcase_add_test(tc, check_write);
     }
     suite_add_tcase(s, tc);
 
