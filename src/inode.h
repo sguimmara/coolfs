@@ -52,6 +52,7 @@ typedef struct Inode {
 } Inode;
 
 void inode_init();
+void inode_destroy();
 
 Inode *get_root();
 

@@ -19,12 +19,20 @@ bitmap *inode_bitmap;
 // TODO dynamically resize the inode array
 Inode *inodes[INODE_TABLE_SIZE];
 
+void free_inode(Inode* inode) {
+    free(inode);
+}
+
 void inode_init() {
     inode_bitmap = bm_alloc(INODE_TABLE_SIZE);
 }
 
-void free_inode(Inode* inode) {
-    free(inode);
+void inode_destroy() {
+    for (size_t i = 0; i < inode_bitmap->bits; i++) {
+        if (bm_is_set(inode_bitmap, i)) {
+            free_inode(get_inode((ino_t)i));
+        }
+    }
 }
 
 void remove_inode(const ino_t ino) {

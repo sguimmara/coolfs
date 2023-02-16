@@ -13,8 +13,8 @@
 #include "inode.h"
 #include "block_allocator.h"
 
-const size_t DEFAULT_BLOCK_SIZE = 4;
-const size_t DEFAULT_BLOCK_CAPACITY = 128;
+const size_t DEFAULT_BLOCK_SIZE = 4096;
+const size_t DEFAULT_BLOCK_CAPACITY = 4096;
 
 void fs_init() {
     inode_init();
@@ -23,6 +23,7 @@ void fs_init() {
 }
 
 void fs_destroy() {
+    inode_destroy();
     block_allocator_destroy();
 }
 
@@ -285,6 +286,8 @@ int _utimens(const char *path, const struct timespec tv[2]) {
 }
 
 int _write(const char *path, const char *buf, size_t size, off_t offset) {
+    log_debug("[%s] %s (size=%lu, offset=%lu)", __FUNCTION__, path, size, offset);
+
     PathBuf pb;
     parse_path(path, &pb);
     Inode *inode = get_inode_by_pathbuf(&pb);
@@ -322,10 +325,12 @@ int _write(const char *path, const char *buf, size_t size, off_t offset) {
 
     inode->data.file.size = size;
 
-    return 0;
+    return (int)size;
 }
 
 int _read(const char *path, const char *buf, size_t size, off_t offset) {
+    log_debug("[%s] %s (size=%lu, offset=%lu)", __FUNCTION__, path, size, offset);
+
     PathBuf pb;
     parse_path(path, &pb);
     Inode *inode = get_inode_by_pathbuf(&pb);
@@ -344,11 +349,7 @@ int _read(const char *path, const char *buf, size_t size, off_t offset) {
 
     FileInode file = inode->data.file;
 
-    if (size > file.size) {
-        return -EINVAL;
-    }
-
     read_from_blocks(buf, size, file.blocks, file.block_count, offset);
 
-    return 0;
+    return size;
 }

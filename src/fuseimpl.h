@@ -13,6 +13,7 @@
 #include "inode.h"
 
 void fuse_init();
+void fuse_deinit(void *unknown);
 int fuse_getattr(const char *path, struct stat *st);
 int fuse_access(const char *path, int mode);
 int fuse_chmod(const char *path, mode_t mode);

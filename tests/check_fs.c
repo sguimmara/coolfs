@@ -156,12 +156,14 @@ START_TEST(check_write) {
 
     ck_assert_int_eq(_create("/file", 0777), 0);
 
-    ck_assert_int_eq(_write("/file", "hello", 5, 0), 0);
+    size_t bufsize = 5;
+
+    ck_assert_int_eq(_write("/file", "hello", bufsize, 0), bufsize);
 
     char *buf = malloc(5);
-    ck_assert_int_eq(_read("/file", buf, 5, 0), 0);
+    ck_assert_int_eq(_read("/file", buf, bufsize, 0), bufsize);
 
-    ck_assert_mem_eq(buf, "hello", 5);
+    ck_assert_mem_eq(buf, "hello", bufsize);
 
     free(buf);
 

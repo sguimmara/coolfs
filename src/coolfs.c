@@ -52,45 +52,6 @@ void *init(struct fuse_conn_info *conn) {
 
     fuse_init();
 
-    ADD_DIR(ROOT, "bin")
-    ADD_DIR(ROOT, "usr")
-    ADD_DIR(ROOT, "etc")
-    ADD_DIR(ROOT, "boot")
-    ADD_DIR(ROOT, "root")
-    ADD_DIR(ROOT, "home")
-
-    // Dirent *fs_root = cl_new_root();
-    // cool_dir *root = fs_root->node.dir;
-
-    // cl_init_inode_allocator(MAX_INODES);
-
-    // cl_add_dir(root, "boot", cl_new_dir());
-    // cl_add_dir(root, "root", cl_new_dir());
-    // cl_add_dir(root, "bin", cl_new_dir());
-    // cl_add_dir(root, "etc", cl_new_dir());
-    // Dirent *home = cl_add_dir(root, "home", cl_new_dir());
-    // Dirent *jay = cl_add_dir(home->node.dir, "jay", cl_new_dir());
-    // cl_add_dir(jay->node.dir, ".config", cl_new_dir());
-
-    // cool_inode *bashrc = cl_new_inode();
-    // cl_add_file(jay->node.dir, ".bashrc", cl_new_file(bashrc->st->st_ino));
-    // cl_add_dir(root, "var", cl_new_dir());
-
-    // const char bashrc_content[] =
-    //         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do\n"
-    //         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut\n"
-    //         "enim ad minim veniam, quis nostrud exercitation ullamco laboris\n"
-    //         "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in\n"
-    //         "reprehenderit in voluptate velit esse cillum dolore eu fugiat\n"
-    //         "nulla pariatur. Excepteur sint occaecat cupidatat non proident,\n"
-    //         "sunt in culpa qui officia deserunt mollit anim id est laborum.\n";
-
-    // cl_write_storage(bashrc_content, sizeof(bashrc_content) - 1, bashrc);
-
-    // // cl_print_root(root);
-
-    // cl_fsinit(fs_root);
-
     log_info("initialized.");
 
     return NULL;
@@ -116,6 +77,8 @@ static const struct fuse_operations operations = {
 
     .rename = fuse_rename,
     .mkdir = fuse_mkdir,
+
+    .destroy = fuse_deinit,
 };
 
 int main(int argc, char *argv[]) {
