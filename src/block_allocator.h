@@ -1,6 +1,8 @@
 #ifndef _COOLFS_BLOCK_ALLOCATOR_H_
 #define _COOLFS_BLOCK_ALLOCATOR_H_
 
+#include <sys/types.h>
+
 #include "block.h"
 
 typedef struct DiskUsage {
@@ -20,10 +22,10 @@ void release_block(blno_t no);
 blno_t *allocate_blocks(const size_t bufsize, size_t *block_count);
 
 void write_into_blocks(const char *buf, size_t bufsize, blno_t *blocks,
-                       size_t block_count, size_t offset);
+                       size_t block_count, off_t offset);
 
 void read_from_blocks(char *dst, size_t bufsize, blno_t *blocks,
-                      size_t block_count);
+                      size_t block_count, off_t offset);
 
 DiskUsage get_stats();
 

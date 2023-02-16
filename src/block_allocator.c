@@ -113,7 +113,7 @@ blno_t *allocate_blocks(size_t bufsize, size_t *blck_count) {
 }
 
 void write_into_blocks(const char *buf, size_t bufsize, blno_t *blocks,
-                       size_t block_count, size_t offset) {
+                       size_t block_count, off_t offset) {
     size_t remaining = bufsize;
     char *ptr = (char *)buf;
 
@@ -131,12 +131,14 @@ void write_into_blocks(const char *buf, size_t bufsize, blno_t *blocks,
 }
 
 void read_from_blocks(char *dst, size_t bufsize, blno_t *blocks,
-                      size_t block_count) {
-    size_t offset = 0;
-    for (size_t i = 0; i < block_count; i++) {
+                      size_t block_count, off_t offset) {
+    size_t dst_offset = 0;
+    size_t first_block = (offset / block_size);
+    for (size_t i = first_block; i < block_count; i++) {
         Block *block = get_block(blocks[i]);
-        memcpy(dst + offset, block->content, block->size);
-        offset += block->size;
+        off_t block_offset = i == first_block ? (offset % block_size) : 0;
+        memcpy(dst + dst_offset, block->content + block_offset, block->size);
+        dst_offset += (block->size - block_offset);
     }
 }
 

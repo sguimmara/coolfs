@@ -19,9 +19,25 @@ START_TEST(check_read_from_blocks) {
 
     char *dst = malloc(128);
 
-    read_from_blocks(dst, 128, blck_nums, count);
+    off_t offset = 0;
+    read_from_blocks(dst, 128, blck_nums, count, offset);
+    ck_assert_int_eq(memcmp(data, dst, size - offset), 0);
 
-    ck_assert_int_eq(memcmp(data, dst, size), 0);
+    offset = 4;
+    read_from_blocks(dst, 128, blck_nums, count, offset);
+    ck_assert_int_eq(memcmp("BBBBCCCCDD", dst, size - offset), 0);
+
+    offset = 5;
+    read_from_blocks(dst, 128, blck_nums, count, offset);
+    ck_assert_int_eq(memcmp("BBBCCCCDD", dst, size - offset), 0);
+
+    offset = 7;
+    read_from_blocks(dst, 128, blck_nums, count, offset);
+    ck_assert_int_eq(memcmp("BCCCCDD", dst, size - offset), 0);
+
+    offset = 10;
+    read_from_blocks(dst, 128, blck_nums, count, offset);
+    ck_assert_int_eq(memcmp("CCDD", dst, size - offset), 0);
 
     free(blck_nums);
 
