@@ -8,6 +8,10 @@ libcoolfs_la_SOURCES = log/log.c \
                        block_allocator.c \
                        serializer.c
 
-bin_PROGRAMS = coolfs
+bin_PROGRAMS = coolfs mkcoolfs
+
 coolfs_SOURCES = coolfs.c
 coolfs_LDADD = libcoolfs.la
+
+mkcoolfs_SOURCES = mkcoolfs.c
+mkcoolfs_LDADD = libcoolfs.la

@@ -9,7 +9,7 @@
 #include "block.h"
 #include "path.h"
 
-#define MAX_PATH 255
+#define MAX_PATH 64
 #define MAX_ENTRIES 255
 
 /**
