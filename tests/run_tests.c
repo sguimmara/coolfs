@@ -12,6 +12,7 @@ int main(void) {
     srunner_add_suite(sr, fs_suite());
     srunner_add_suite(sr, inode_suite());
     srunner_add_suite(sr, path_suite());
+    srunner_add_suite(sr, serializer_suite());
 
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);

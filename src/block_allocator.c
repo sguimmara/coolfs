@@ -1,24 +1,26 @@
-#include "block_allocator.h"
-#include "bitmap.h"
-#include "block.h"
-#include "errno.h"
+#include <errno.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/types.h>
 
-size_t block_size;
-size_t total_capacity;
-size_t current_capacity;
-bitmap *block_usage;
-size_t block_count;
-Block **blocks;
+#include "block_allocator.h"
+#include "bitmap.h"
+#include "block.h"
+
+size_t BLOCK_SIZE;     // In bytes
+size_t TOTAL_CAPACITY; // How many blocks can we store in the block array
+size_t current_capacity; // The current cap of the block array
+bitmap *block_usage; // Bitmap containing the used/non used blocks
+size_t block_count; // The number of used blocks
+Block **blocks;  // The block array
 
 void block_allocator_init(size_t blck_size, size_t cap) {
     block_usage = bm_alloc(cap);
-    block_size = blck_size;
-    total_capacity = cap;
+    BLOCK_SIZE = blck_size;
+    TOTAL_CAPACITY = cap;
     current_capacity = 0;
     block_count = 0;
     blocks = NULL;
@@ -30,8 +32,8 @@ void expand_block_array() {
     } else {
         current_capacity *= 2;
     }
-    if (current_capacity > total_capacity) {
-        current_capacity = total_capacity;
+    if (current_capacity > TOTAL_CAPACITY) {
+        current_capacity = TOTAL_CAPACITY;
     }
     blocks = realloc(blocks, current_capacity * sizeof(Block *));
 }
@@ -62,7 +64,7 @@ Block *new_block() {
     result->no = (blno_t)blno;
     result->size = 0;
     result->flags = BLCK_CHNG;
-    result->content = malloc(block_size);
+    result->content = malloc(BLOCK_SIZE);
 
     add_block(result);
 
@@ -92,7 +94,7 @@ void release_block(blno_t no) {
  * @brief How many blocks to store BUFSIZE ?
  */
 size_t count_blocks(size_t bufsize) {
-    return (bufsize / block_size) + (bufsize % block_size > 0 ? 1 : 0);
+    return (bufsize / BLOCK_SIZE) + (bufsize % BLOCK_SIZE > 0 ? 1 : 0);
 }
 
 blno_t *allocate_blocks(size_t bufsize, size_t *blck_count) {
@@ -117,26 +119,26 @@ void write_into_blocks(const char *buf, size_t bufsize, blno_t *blocks,
     size_t remaining = bufsize;
     char *ptr = (char *)buf;
 
-    for (size_t i = 0; i < bufsize; i += block_size) {
-        size_t block_index = (i + offset) / block_size;
-        size_t block_offset = offset % block_size;
+    for (size_t i = 0; i < bufsize; i += BLOCK_SIZE) {
+        size_t block_index = (i + offset) / BLOCK_SIZE;
+        size_t block_offset = offset % BLOCK_SIZE;
         blno_t blno = blocks[block_index];
         Block *block = get_block(blno);
-        size_t size = remaining < block_size ? remaining : block_size;
+        size_t size = remaining < BLOCK_SIZE ? remaining : BLOCK_SIZE;
         block->size = size;
         memcpy(block->content + block_offset, ptr + i, size);
         block->flags = BLCK_CHNG;
-        remaining -= block_size;
+        remaining -= BLOCK_SIZE;
     }
 }
 
 void read_from_blocks(char *dst, size_t bufsize, blno_t *blocks,
                       size_t block_count, off_t offset) {
     size_t dst_offset = 0;
-    size_t first_block = (offset / block_size);
+    size_t first_block = (offset / BLOCK_SIZE);
     for (size_t i = first_block; i < block_count; i++) {
         Block *block = get_block(blocks[i]);
-        off_t block_offset = i == first_block ? (offset % block_size) : 0;
+        off_t block_offset = i == first_block ? (offset % BLOCK_SIZE) : 0;
         memcpy(dst + dst_offset, block->content + block_offset, block->size);
         dst_offset += (block->size - block_offset);
     }
@@ -144,9 +146,9 @@ void read_from_blocks(char *dst, size_t bufsize, blno_t *blocks,
 
 DiskUsage get_stats() {
     DiskUsage result = {.allocated_blocks = block_count,
-                        .block_size = block_size,
-                        .total_capacity = total_capacity * block_size,
-                        .used_space = block_count * block_size};
+                        .block_size = BLOCK_SIZE,
+                        .total_capacity = TOTAL_CAPACITY * BLOCK_SIZE,
+                        .used_space = block_count * BLOCK_SIZE};
 
     return result;
 }

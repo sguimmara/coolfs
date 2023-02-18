@@ -6,6 +6,7 @@ bincheck_SOURCES = run_tests.c check_all.h \
                    check_bitmap.c \
                    check_path.c \
                    check_fs.c \
+                   check_serializer.c \
                    check_inode.c
 
 bincheck_CFLAGS = @CHECK_CFLAGS@
